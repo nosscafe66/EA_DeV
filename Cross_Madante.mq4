@@ -9,6 +9,7 @@
 #property strict
 //--- input parameters
 
+datetime prevtime;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -50,24 +51,87 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
+
+#property script_show_confirm 1
 void OnTick()
 {
-  //---
+  //--
+  Print("通貨ペア " + _Symbol + "小数桁数 " + _Digits + "最小値幅" + _Point + "タイムフレーム " + _Period);
+
+  int ticket;
+  ticket = OrderSend(_Symbol, OP_BUY, 0.01, Ask, 3, 0, 0);
+  // MessageBox("チケット番号" + ticket);
+  Print("証拠金通貨：", AccountInfoString(ACCOUNT_CURRENCY));
+  Print("レバレッジ：", AccountInfoInteger(ACCOUNT_LEVERAGE));
+  Print("残高：", AccountInfoDouble(ACCOUNT_BALANCE));
+  Print("有効証拠金：", AccountInfoDouble(ACCOUNT_EQUITY));
+  Print("必要証拠金：", AccountInfoDouble(ACCOUNT_MARGIN));
+  Print("余剰証拠金：", AccountInfoDouble(ACCOUNT_MARGIN_FREE));
+  Print("証拠金維持率：", AccountInfoDouble(ACCOUNT_MARGIN_LEVEL));
+
   // EAの注文数
   int position = OrdersTotal();
   double ma = iMA(NULL, PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, 0);
   Print(ma);
   // 20pips乖離した場合、現在の売値よりも大きいASK(買い値)
+
+  //クロスマダンテ条件
+  /*
+  ロング：雲上
+  ショート：雲下
+  表示させる移動平均線：5.14.21.60.240.1440　全てパーフェクトオーダー
+  5SMAをそれぞれ上抜け　下抜けでエントリー
+  損切り：雲が入れ替わって反対側にいくか20pips固定
+          5分足での直近高値・安値少し上または下
+
+          一番新しいローソク足が5EMAを抜けた時
+  5分足のみ確認してエントリーする。
+  */
+
+
+  //新しいローソク足ができたときのみエントリー
+  if (Time[0] != prevtime)
+  {
+    prevtime = Time[0];
+  }
+
+
+
+  //
+  if() {
+
+  }
+
+
+
+
+
+
+
+  //一目均衡表の雲だけ出す。
+  double Tenkansen = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 0, 1);
+  double Kijunsen = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 1, 1);
+  double SenkouSpanA = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 2, 1);
+  double SenkouSpanB = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 3, 1);
+  double ChikouSpan = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 4, 27);
+
+  else
+  {
+    return (0);
+  }
+
   if (position < 1)
   {
     if (ma - 0.2 >= Bid)
     {
       //(シンボル、注文方法、ロット数、買い値、スリッページ,SL、TP、コメント、EAのナンバリング、有効期限、カラー)
-      OrderSend(NULL, OP_BUY, 0.1, Ask, 0, Bid + 0.1, 0, "Long", 00000, 0, Red);
+      //OrderSend(NULL, OP_BUY, 0.1, Ask, 0, Bid + 0.1, 0, "Long", 00000, 0, Red);//ロングエントリー
+      //OrderSend(NULL, OP_BUY, 0.01, Ask, 0, Bid + 0.1, 0, "Short", 00000, 0, Red); //ショートエントリー
     }
     else if (ma - 0.2 <= Bid)
     {
-      OrderSend(NULL, OP_BUY, 0.01, Ask, 0, Bid + 0.1, 0, "Long", 00000, 0, Red);
+      //OrderSend(NULL, OP_BUY, 0.01, Ask, 0, Bid + 0.1, 0, "Long", 00000, 0, Red);//ロングエントリー
+      //OrderSend(NULL, OP_BUY, 0.01, Ask, 0, Bid + 0.1, 0, "Short", 00000, 0, Red); //ショートエントリー
     }
   }
   else
@@ -91,4 +155,5 @@ void OnTick()
     }
   }
 }
+
 //+------------------------------------------------------------------+
