@@ -9,34 +9,30 @@
 #property strict
 //--- input parameters
 
-datetime prevtime;
+//サフィックスの設定
+string suffix;
+
+//連続でエントリーしないためのフラグ
+datetime time = Time[0];
+
+//外部入力(変更可能性あり)
+input double LOT = 0.01;             //ロット数の設定
+input double MAXLOT = 1;             //最大ロット数の設定
+input double MAXPOSITION = 200;      //最大ポジション数
+input double TAKEPROFIT_WIDTH = 100; //利確幅（単位point）
+input double STOPLOSS_WIDTH = 100;   //損切り幅（単位point）
+
+//マジックナンバーの設定(変更可能性あり)
+int magicNumber = 10;
+
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
 {
   //---
-  Print("Hello World");
-  int num = 1;
-  int num2 = 2;
-  Print(num + num2);
-  if (num == 1)
-  {
-    Print("OK");
-    int sum = 0;
-    for (int i = 0; i < 10; i++)
-    {
-      sum = 1 + i;
-      if (sum == 5)
-      {
-        Print("End");
-      }
-    }
-  }
-  else if (num == 2)
-  {
-    Print("No");
-  }
+  // if(StringLen(Symbol()) > 6) suffix = StringSubstr(Symbol(),6);
+  // else suffix = "";
 
   //---
   return (INIT_SUCCEEDED);
@@ -53,103 +49,104 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 
 #property script_show_confirm 1
+//初期関数(価格が動くごとに実行)
 void OnTick()
 {
   //--
-  Print("通貨ペア " + _Symbol + "小数桁数 " + _Digits + "最小値幅" + _Point + "タイムフレーム " + _Period);
+  //現在のポジション数を代入する変数
+  int positionNum = 0;
 
-  int ticket;
-  ticket = OrderSend(_Symbol, OP_BUY, 0.01, Ask, 3, 0, 0);
-  // MessageBox("チケット番号" + ticket);
-  Print("証拠金通貨：", AccountInfoString(ACCOUNT_CURRENCY));
-  Print("レバレッジ：", AccountInfoInteger(ACCOUNT_LEVERAGE));
-  Print("残高：", AccountInfoDouble(ACCOUNT_BALANCE));
-  Print("有効証拠金：", AccountInfoDouble(ACCOUNT_EQUITY));
-  Print("必要証拠金：", AccountInfoDouble(ACCOUNT_MARGIN));
-  Print("余剰証拠金：", AccountInfoDouble(ACCOUNT_MARGIN_FREE));
-  Print("証拠金維持率：", AccountInfoDouble(ACCOUNT_MARGIN_LEVEL));
+  //ここに現在のポジション数を更新するプログラムを書く
 
-  // EAの注文数
-  int position = OrdersTotal();
-  double ma = iMA(NULL, PERIOD_CURRENT, 20, 0, MODE_SMA, PRICE_CLOSE, 0);
-  Print(ma);
-  // 20pips乖離した場合、現在の売値よりも大きいASK(買い値)
+  //最大ロット数のチェック
+  if (LOT > MAXLOT)
+    Print(MAXLOT);
+  return;
 
-  //クロスマダンテ条件
-  /*
-  ロング：雲上
-  ショート：雲下
-  表示させる移動平均線：5.14.21.60.240.1440　全てパーフェクトオーダー
-  5SMAをそれぞれ上抜け　下抜けでエントリー
-  損切り：雲が入れ替わって反対側にいくか20pips固定
-          5分足での直近高値・安値少し上または下
+  //最大ポジション数のチェック
+  if (positionNum > MAXPOSITION)
+    Print(MAXPOSITION);
+  return;
 
-          一番新しいローソク足が5EMAを抜けた時
-  5分足のみ確認してエントリーする。
-  */
-
-
-  //新しいローソク足ができたときのみエントリー
-  if (Time[0] != prevtime)
+  //連続でエントリーしないようにする処理
+  // time変数が、現在の時間ではない場合に実行する
+  if (time != Time[0])
   {
-    prevtime = Time[0];
-  }
 
+    // time変数に、現在の時間を代入
+    time = Time[0];
 
+    //↓↓↓↓↓↓↓↓↓↓↓↓ここから下にロジックやエントリー注文を書く↓↓↓↓↓↓↓↓↓↓↓↓
+    //=======Cross_Madante用のエントリーロジック======
 
-  //
-  if() {
+    //エントリーサンプル（実行しないでください！！）
+    // int buy = OrderSend(Symbol(), OP_BUY, LOT, Ask, 30, Ask-STOPLOSS_WIDTH, Ask+TAKEPROFIT_WIDTH, "自動売買を作ろう！", 9999, clrNONE);
 
-  }
+    //=====移動平均線の値を取得する処理======
 
+    //移動平均線の値取得変数宣言
+    double MA_5;
+    double MA_14;
+    double MA_21;
+    double MA_60;
+    double MA_240;
+    double MA_1440;
 
+    //移動平均線の値を取得
+    MA_5 = iMA(NULL, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 0);
+    MA_14 = iMA(NULL, 0, 14, 0, MODE_SMA, PRICE_CLOSE, 0);
+    MA_21 = iMA(NULL, 0, 21, 0, MODE_SMA, PRICE_CLOSE, 0);
+    MA_60 = iMA(NULL, 0, 60, 0, MODE_SMA, PRICE_CLOSE, 0);
+    MA_240 = iMA(NULL, 0, 240, 0, MODE_SMA, PRICE_CLOSE, 0);
+    MA_1440 = iMA(NULL, 0, 1440, 0, MODE_SMA, PRICE_CLOSE, 0);
 
+    //移動平均線の値取得のプリントデバッグ
+    Print(MA_5);
+    Print(MA_14);
+    Print(MA_21);
+    Print(MA_60);
+    Print(MA_240);
+    Print(MA_1440);
 
+    Comment("\n",
+            " 5移動平均線：", MA_5, "\n", "\n",
+            "14移動平均線：", MA_14, "\n", "\n",
+            "21移動平均線：", MA_21, "\n", "\n",
+            "60移動平均線：", MA_60, "\n", "\n",
+            "240移動平均線：", MA_240, "\n", "\n",
+            "1440移動平均線：", MA_1440);
 
+    //条件１：取得した移動平均線の値が過去のどの値よりも大きい
+    //条件２：取得した移動平均線の値がパーフェクトオーダーとなっている
+    //条件３：
 
-
-  //一目均衡表の雲だけ出す。
-  double Tenkansen = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 0, 1);
-  double Kijunsen = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 1, 1);
-  double SenkouSpanA = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 2, 1);
-  double SenkouSpanB = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 3, 1);
-  double ChikouSpan = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 4, 27);
-
-  else
-  {
-    return (0);
-  }
-
-  if (position < 1)
-  {
-    if (ma - 0.2 >= Bid)
+    //=======決済ロジック=======
+    for (int i = 0; i < OrdersTotal(); i++)
     {
-      //(シンボル、注文方法、ロット数、買い値、スリッページ,SL、TP、コメント、EAのナンバリング、有効期限、カラー)
-      //OrderSend(NULL, OP_BUY, 0.1, Ask, 0, Bid + 0.1, 0, "Long", 00000, 0, Red);//ロングエントリー
-      //OrderSend(NULL, OP_BUY, 0.01, Ask, 0, Bid + 0.1, 0, "Short", 00000, 0, Red); //ショートエントリー
-    }
-    else if (ma - 0.2 <= Bid)
-    {
-      //OrderSend(NULL, OP_BUY, 0.01, Ask, 0, Bid + 0.1, 0, "Long", 00000, 0, Red);//ロングエントリー
-      //OrderSend(NULL, OP_BUY, 0.01, Ask, 0, Bid + 0.1, 0, "Short", 00000, 0, Red); //ショートエントリー
-    }
-  }
-  else
-  {
-    if (OrderSelect(0, SELECT_BY_POS, MODE_TRADES) != false)
-    {
-      if (OrderType() == OP_BUY)
+      //ポジションを選択
+      if (OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
       {
-        if (Bid >= ma)
+        //ポジションの通貨ペアとEAの通貨ペアが一致しているか
+        if (OrderSymbol() == Symbol())
         {
-          OrderClose(OrderTicket(), OrderLots(), Bid, 0, Red);
-        }
-      }
-      else if (OrderType() == OP_SELL)
-      {
-        if (Bid <= ma)
-        {
-          OrderClose(OrderTicket(), OrderLots(), Ask, 0, Blue);
+          //マジックナンバーが一致しているか
+          if (OrderMagicNumber() == magicNumber)
+          {
+            //買いポジションの場合
+            if (OrderType() == OP_BUY)
+            {
+              positionNum++;
+              //ここに決済ロジックを書く（if文）
+              // bool close = OrderClose(OrderTicket(), OrderLots(), OrderOpenPrice(), SLIPPAGE);
+            }
+            //売りポジションの場合
+            if (OrderType() == OP_SELL)
+            {
+              positionNum++;
+              //ここに決済ロジックを書く（if文）
+              // bool close = OrderClose(OrderTicket(), OrderLots(), OrderOpenPrice(), SLIPPAGE);
+            }
+          }
         }
       }
     }
