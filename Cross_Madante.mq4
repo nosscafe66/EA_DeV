@@ -7,23 +7,35 @@
 #property link "https://www.mql5.com"
 #property version "1.00"
 #property strict
+
 //--- input parameters
-
-//サフィックスの設定
-string suffix;
-
-//連続でエントリーしないためのフラグ
-datetime time = Time[0];
-
-//外部入力(変更可能性あり)
 input double LOT = 0.01;             //ロット数の設定
 input double MAXLOT = 1;             //最大ロット数の設定
 input double MAXPOSITION = 200;      //最大ポジション数
 input double TAKEPROFIT_WIDTH = 100; //利確幅（単位point）
 input double STOPLOSS_WIDTH = 100;   //損切り幅（単位point）
 
-//マジックナンバーの設定(変更可能性あり)
-int magicNumber = 10;
+//======グローバル変数として保持する値======
+
+//移動平均線の値取得変数宣言(Ontickで取得した値が毎回更新される)
+double MA_5;
+double MA_14;
+double MA_21;
+double MA_60;
+double MA_240;
+double MA_1440;
+
+//=======業者間の通貨ペアの取得ができるようにする=======
+//サフィックスの設定
+string suffix;
+
+//連続でエントリーしないためのフラグ
+datetime time = Time[0];
+
+// Print("HELLO LONG");
+
+//マジックナンバーの設定(自動売買がポジションを管理するための番号)
+int magicNumber = 888;
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -80,25 +92,21 @@ void OnTick()
     //=======Cross_Madante用のエントリーロジック======
 
     //エントリーサンプル（実行しないでください！！）
-    // int buy = OrderSend(Symbol(), OP_BUY, LOT, Ask, 30, Ask-STOPLOSS_WIDTH, Ask+TAKEPROFIT_WIDTH, "自動売買を作ろう！", 9999, clrNONE);
+    // int buy = OrderSend(Symbol(), OP_BUY, LOT, Ask, 30, Ask-STOPLOSS_WIDTH, Ask+TAKEPROFIT_WIDTH, "自動売買を作ろう！", magicNumber, clrNONE);
 
     //=====移動平均線の値を取得する処理======
 
-    //移動平均線の値取得変数宣言
-    double MA_5;
-    double MA_14;
-    double MA_21;
-    double MA_60;
-    double MA_240;
-    double MA_1440;
+    //現在の移動平均線の値と比較を行い,前回の値を下回ったら値を取得する.前回と同じかそれ以上の場合は値を更新しない.
 
-    //移動平均線の値を取得
-    MA_5 = iMA(NULL, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 0);
-    MA_14 = iMA(NULL, 0, 14, 0, MODE_SMA, PRICE_CLOSE, 0);
-    MA_21 = iMA(NULL, 0, 21, 0, MODE_SMA, PRICE_CLOSE, 0);
-    MA_60 = iMA(NULL, 0, 60, 0, MODE_SMA, PRICE_CLOSE, 0);
-    MA_240 = iMA(NULL, 0, 240, 0, MODE_SMA, PRICE_CLOSE, 0);
-    MA_1440 = iMA(NULL, 0, 1440, 0, MODE_SMA, PRICE_CLOSE, 0);
+    if ()
+    { //移動平均線の値を取得
+      MA_5 = iMA(NULL, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 0);
+      MA_14 = iMA(NULL, 0, 14, 0, MODE_SMA, PRICE_CLOSE, 0);
+      MA_21 = iMA(NULL, 0, 21, 0, MODE_SMA, PRICE_CLOSE, 0);
+      MA_60 = iMA(NULL, 0, 60, 0, MODE_SMA, PRICE_CLOSE, 0);
+      MA_240 = iMA(NULL, 0, 240, 0, MODE_SMA, PRICE_CLOSE, 0);
+      MA_1440 = iMA(NULL, 0, 1440, 0, MODE_SMA, PRICE_CLOSE, 0);
+    }
 
     //移動平均線の値取得のプリントデバッグ
     Print(MA_5);
@@ -115,10 +123,33 @@ void OnTick()
             "60移動平均線：", MA_60, "\n", "\n",
             "240移動平均線：", MA_240, "\n", "\n",
             "1440移動平均線：", MA_1440);
+    int buy = OrderSend(Symbol(), OP_BUY, LOT, Ask, 30, Ask - STOPLOSS_WIDTH, Ask + TAKEPROFIT_WIDTH, "自動売買を作ろう！", magicNumber, clrNONE);
+    //=====一目均衡表の値を取得する処理======
 
+    //======CrossMadante用のエントリー条件判定処理(自動売買)======
     //条件１：取得した移動平均線の値が過去のどの値よりも大きい
-    //条件２：取得した移動平均線の値がパーフェクトオーダーとなっている
-    //条件３：
+    //条件２：取得した移動平均線の値がパーフェクトオーダーとなっている(下落の場合：短期 < 中期　< 長期)
+
+    //上昇の場合：短期 > 中期 > 長期
+    if (MA_5 > MA_14 && MA_21 > MA_60 && MA_240 > MA_1440)
+    {
+      OrderSend(NULL, OP_BUY, 0.01, Ask, 0, Bid + 0.1, 0, "Long", magicNumber, 0, Red); //ロングエントリー
+      Print("HELLO LONG");
+    }
+
+    //下落の場合：短期 < 中期　< 長期
+    else if (MA_5 < MA_14 && MA_21 > MA_60 && MA_240 > MA_1440)
+    {
+      OrderSend(NULL, OP_BUY, 0.01, Ask, 0, Bid + 0.1, 0, "Short", magicNumber, 0, Red); //ショートエントリー
+      Print("HELLO SHORT");
+    }
+
+    else
+    {
+    }
+    //条件３：5SMAと最新のローソク足の値の比較を行いエントリーを考える。
+
+    //条件4：新しい移動平均線の値が毎回前回の移動平均線の値よりも更新できていることを確認する
 
     //=======決済ロジック=======
     for (int i = 0; i < OrdersTotal(); i++)
@@ -149,6 +180,12 @@ void OnTick()
           }
         }
       }
+    }
+    for (int i = OrdersTotal() - 1; i >= 0; i--)
+    {
+      //ここにポジションビの情報を１つ１つチェックするためのプログラムを書く
+      Comment("\n",
+              "現在のポジション: ", i);
     }
   }
 }
