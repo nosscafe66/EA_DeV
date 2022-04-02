@@ -25,6 +25,19 @@ double MA_60;
 double MA_240;
 double MA_1440;
 
+//一目均衡表の値取得宣言(Ontickで取得した値が毎回更新される)
+double Tenkansen;
+double Kijunsen;
+double SenkouSpanA;
+double SenkouSpanB;
+double ChikouSpan;
+
+//ローソク足の値取得宣言(Ontickで取得した値が毎回更新される)
+double Candle_high;
+double Candle_low;
+double Candle_start;
+double Candle_end;
+
 //=======業者間の通貨ペアの取得ができるようにする=======
 //サフィックスの設定
 string suffix;
@@ -34,7 +47,7 @@ datetime time = Time[0];
 
 // Print("HELLO LONG");
 
-//マジックナンバーの設定(自動売買がポジションを管理するための番号)
+// CrossMadante用マジックナンバーの設定(自動売買がポジションを管理するための番号)
 int magicNumber = 888;
 
 //+------------------------------------------------------------------+
@@ -82,11 +95,11 @@ void OnTick()
 
   //連続でエントリーしないようにする処理
   // time変数が、現在の時間ではない場合に実行する
-  if (time != Time[0])
+  // if (time != Time[0])
   {
 
     // time変数に、現在の時間を代入
-    time = Time[0];
+    // time = Time[0];
 
     //↓↓↓↓↓↓↓↓↓↓↓↓ここから下にロジックやエントリー注文を書く↓↓↓↓↓↓↓↓↓↓↓↓
     //=======Cross_Madante用のエントリーロジック======
@@ -98,15 +111,15 @@ void OnTick()
 
     //現在の移動平均線の値と比較を行い,前回の値を下回ったら値を取得する.前回と同じかそれ以上の場合は値を更新しない.
 
-    if ()
-    { //移動平均線の値を取得
-      MA_5 = iMA(NULL, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 0);
-      MA_14 = iMA(NULL, 0, 14, 0, MODE_SMA, PRICE_CLOSE, 0);
-      MA_21 = iMA(NULL, 0, 21, 0, MODE_SMA, PRICE_CLOSE, 0);
-      MA_60 = iMA(NULL, 0, 60, 0, MODE_SMA, PRICE_CLOSE, 0);
-      MA_240 = iMA(NULL, 0, 240, 0, MODE_SMA, PRICE_CLOSE, 0);
-      MA_1440 = iMA(NULL, 0, 1440, 0, MODE_SMA, PRICE_CLOSE, 0);
-    }
+    // if ()
+    //{ //移動平均線の値を取得
+    MA_5 = iMA(NULL, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 0);
+    MA_14 = iMA(NULL, 0, 14, 0, MODE_SMA, PRICE_CLOSE, 0);
+    MA_21 = iMA(NULL, 0, 21, 0, MODE_SMA, PRICE_CLOSE, 0);
+    MA_60 = iMA(NULL, 0, 60, 0, MODE_SMA, PRICE_CLOSE, 0);
+    MA_240 = iMA(NULL, 0, 240, 0, MODE_SMA, PRICE_CLOSE, 0);
+    MA_1440 = iMA(NULL, 0, 1440, 0, MODE_SMA, PRICE_CLOSE, 0);
+    //}
 
     //移動平均線の値取得のプリントデバッグ
     Print(MA_5);
@@ -115,6 +128,26 @@ void OnTick()
     Print(MA_60);
     Print(MA_240);
     Print(MA_1440);
+
+    //一目均衡表の値を取得(重要なのは先行スパンA,B=雲になる)
+    Tenkansen = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 0, 1);
+    Kijunsen = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 1, 1);
+    SenkouSpanA = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 2, 1);
+    SenkouSpanB = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 3, 1);
+    ChikouSpan = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 4, 27);
+
+    //一目均衡表の値取得のプリントデバッグ
+    Print(Tenkansen);
+    Print(Kijunsen);
+    Print(SenkouSpanA);
+    Print(SenkouSpanB);
+    Print(ChikouSpan);
+
+    //前日のローソク足と当日のローソク足の情報を取得する
+
+    //======移動平均線の傾きを求める
+
+    //======移動平均線の傾きが上昇傾向の傾き可動化の判断を行う
 
     Comment("\n",
             " 5移動平均線：", MA_5, "\n", "\n",
@@ -129,7 +162,7 @@ void OnTick()
     //======CrossMadante用のエントリー条件判定処理(自動売買)======
     //条件１：取得した移動平均線の値が過去のどの値よりも大きい
     //条件２：取得した移動平均線の値がパーフェクトオーダーとなっている(下落の場合：短期 < 中期　< 長期)
-
+    OrderSend(NULL, OP_BUY, 0.01, Ask, 0, Bid + 0.1, 0, "Long", magicNumber, 0, Red); //ロングエントリー
     //上昇の場合：短期 > 中期 > 長期
     if (MA_5 > MA_14 && MA_21 > MA_60 && MA_240 > MA_1440)
     {
@@ -152,6 +185,7 @@ void OnTick()
     //条件4：新しい移動平均線の値が毎回前回の移動平均線の値よりも更新できていることを確認する
 
     //=======決済ロジック=======
+    //決済ロジック条件の前提条件に移動平均線の値が前回よりも更新しなくなったタイミングを一度判定する。(保有し続けるか一度利益確定するかを判定する)
     for (int i = 0; i < OrdersTotal(); i++)
     {
       //ポジションを選択
