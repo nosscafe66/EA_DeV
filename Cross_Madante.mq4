@@ -50,14 +50,15 @@ datetime time = Time[0];
 // CrossMadante用マジックナンバーの設定(自動売買がポジションを管理するための番号)
 int magicNumber = 888;
 
+int orderFlag = 0; //エントリーするかどうかの初期値
+
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
 {
   //---
-  // if(StringLen(Symbol()) > 6) suffix = StringSubstr(Symbol(),6);
-  // else suffix = "";
+  //---グローバル変数の初期化
 
   //---
   return (INIT_SUCCEEDED);
@@ -111,37 +112,53 @@ void OnTick()
 
     //現在の移動平均線の値と比較を行い,前回の値を下回ったら値を取得する.前回と同じかそれ以上の場合は値を更新しない.
 
+    //======陽線と陰線の判定======
+    //陽線======終値 > 始値：終値 – 始値・上髭の長さについて：高値 – 終値・下髭の長さについて：始値 – 安値
+    //陽線======始値 > 終値：始値 – 終値・上髭の長さについて：高値 – 始値・下髭の長さについて：終値 – 安値
+
     // if ()
     //{ //移動平均線の値を取得
-    MA_5 = iMA(NULL, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 0);
-    MA_14 = iMA(NULL, 0, 14, 0, MODE_SMA, PRICE_CLOSE, 0);
-    MA_21 = iMA(NULL, 0, 21, 0, MODE_SMA, PRICE_CLOSE, 0);
-    MA_60 = iMA(NULL, 0, 60, 0, MODE_SMA, PRICE_CLOSE, 0);
-    MA_240 = iMA(NULL, 0, 240, 0, MODE_SMA, PRICE_CLOSE, 0);
-    MA_1440 = iMA(NULL, 0, 1440, 0, MODE_SMA, PRICE_CLOSE, 0);
+    double get_MA_5 = iMA(NULL, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 0);
+    double get_MA_14 = iMA(NULL, 0, 14, 0, MODE_SMA, PRICE_CLOSE, 0);
+    double get_MA_21 = iMA(NULL, 0, 21, 0, MODE_SMA, PRICE_CLOSE, 0);
+    double get_MA_60 = iMA(NULL, 0, 60, 0, MODE_SMA, PRICE_CLOSE, 0);
+    double get_MA_240 = iMA(NULL, 0, 240, 0, MODE_SMA, PRICE_CLOSE, 0);
+    double get_MA_1440 = iMA(NULL, 0, 1440, 0, MODE_SMA, PRICE_CLOSE, 0);
     //}
 
     //移動平均線の値取得のプリントデバッグ
-    Print(MA_5);
-    Print(MA_14);
-    Print(MA_21);
-    Print(MA_60);
-    Print(MA_240);
-    Print(MA_1440);
+    Print(get_MA_5);
+    Print(get_MA_14);
+    Print(get_MA_21);
+    Print(get_MA_60);
+    Print(get_MA_240);
+    Print(get_MA_1440);
 
     //一目均衡表の値を取得(重要なのは先行スパンA,B=雲になる)
-    Tenkansen = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 0, 1);
-    Kijunsen = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 1, 1);
-    SenkouSpanA = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 2, 1);
-    SenkouSpanB = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 3, 1);
-    ChikouSpan = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 4, 27);
+    double get_Tenkansen = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 0, 1);
+    double get_Kijunsen = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 1, 1);
+    double get_SenkouSpanA = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 2, 1);
+    double get_SenkouSpanB = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 3, 1);
+    double get_ChikouSpan = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 4, 27);
 
     //一目均衡表の値取得のプリントデバッグ
-    Print(Tenkansen);
-    Print(Kijunsen);
-    Print(SenkouSpanA);
-    Print(SenkouSpanB);
-    Print(ChikouSpan);
+    Print(get_Tenkansen);
+    Print(get_Kijunsen);
+    Print(get_SenkouSpanA);
+    Print(get_SenkouSpanB);
+    Print(get_ChikouSpan);
+
+    //ローソク足の値取得
+    double get_Candle_high = iHigh(NULL, PERIOD_M5, 0);
+    double get_Candle_low = iLow(NULL, PERIOD_M5, 0);
+    double get_Candle_start = iOpen(NULL, PERIOD_M5, 0);
+    double get_Candle_end = iClose(NULL, PERIOD_M5, 0);
+
+    //ローソク足の値取得のプリントデバッグ
+    Print(get_Candle_high);
+    Print(get_Candle_low);
+    Print(get_Candle_start);
+    Print(get_Candle_end);
 
     //前日のローソク足と当日のローソク足の情報を取得する
 
@@ -156,11 +173,31 @@ void OnTick()
             "60移動平均線：", MA_60, "\n", "\n",
             "240移動平均線：", MA_240, "\n", "\n",
             "1440移動平均線：", MA_1440);
-    int buy = OrderSend(Symbol(), OP_BUY, LOT, Ask, 30, Ask - STOPLOSS_WIDTH, Ask + TAKEPROFIT_WIDTH, "自動売買を作ろう！", magicNumber, clrNONE);
-    //=====一目均衡表の値を取得する処理======
+    // int buy = OrderSend(Symbol(), OP_BUY, LOT, Ask, 30, Ask - STOPLOSS_WIDTH, Ask + TAKEPROFIT_WIDTH, "自動売買を作ろう！", magicNumber, clrNONE);
+
+    //======前提条件確認：雲とローソク足の位置関係を判定し上昇トレンドか下降トレンドを判定する======
+
+    //======：orderFlag=1上昇トレンド
+    if (get_Candle_high > get_Candle_end > get_MA_5 > get_MA_14 > get_MA_21 > get_MA_60 > get_MA_240 > get_MA_1440)
+    {
+      orderFlag = 1
+    }
+
+    //======：orderFlag=2下降トレンド
+    else if (get_Candle_low < get_Candle_end < get_MA_5 < get_MA_14 < get_MA_21 < get_MA_60 < get_MA_240 < get_MA_1440)
+    {
+      orderFlag = 2
+    }
+
+    //======：orderFlag=0何もしない
+    else
+    {
+      orderFlag = 0
+    }
 
     //======CrossMadante用のエントリー条件判定処理(自動売買)======
     //条件１：取得した移動平均線の値が過去のどの値よりも大きい
+
     //条件２：取得した移動平均線の値がパーフェクトオーダーとなっている(下落の場合：短期 < 中期　< 長期)
     OrderSend(NULL, OP_BUY, 0.01, Ask, 0, Bid + 0.1, 0, "Long", magicNumber, 0, Red); //ロングエントリー
     //上昇の場合：短期 > 中期 > 長期
