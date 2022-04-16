@@ -1,4 +1,42 @@
 # 開発で調査したこと
+
+・EA開発の指南書
+https://yukifx.web.fc2.com/sub/reference/02_stdconstans/object/object_z_OBJ_RECTANGLE_LABEL.html
+
+・https://fxantenna.com/how-to-make-ea-practice/
+
+・イベント関数について
+https://yukifx.web.fc2.com/sub/reference/01_basic/function/function_event.html
+
+・コンパイルエラーについて
+https://yukifx.web.fc2.com/sub/qa/qa_error/cone/qa_error_root.html
+
+・インジケーター改造
+https://mtplace.biz/547.html
+
+・MQL4逆引き
+https://blog.codinal-systems.com/mql4technique/
+
+
+・ピラミッティング判定処理
+https://www.youtube.com/watch?v=X7-M_7snyM4
+
+https://autofx-now.com/myea/pyramid-cf-html
+
+iMa関数
+https://creator.fx-ea-system-project.com/mt4-indicator/ima/
+
+・配列について
+https://mql-programing.com/array/
+
+
+新規注文時間制限
+https://get-daze.net/2018/10/14/time-rimit/
+
+Ordersend関数について
+https://buco-bianco.com/mql4-ordersend-function/
+
+
 ・パーフェクトオーダー
 https://creator.fx-ea-system-project.com/mt4-indicator/perfect-order/
 https://fx.ichizo.biz/2017/02/09/perfectorder.html
@@ -103,3 +141,7 @@ https://blog.codinal-systems.com/mql4technique/
 
 vscode mql4
 https://fx-ai-trading.com/fx/mql/vs-code.html
+
+
+新しいローソク足が出現した時にだけ判断する。
+https://fx7se.com/mql/mql_ashione

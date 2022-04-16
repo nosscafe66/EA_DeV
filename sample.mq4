@@ -9,6 +9,25 @@
 //#property strict
 #define MAGICMA 20228888
 
+//======各種フラグの説明=======
+//基本的な上昇・下降の判定
+//上昇：1、下降：2、何もしない：0
+//基本的は買い注文、売り注文の判定
+//買い：1、売り：2、何もしない：0
+//通貨ペア取得フラグ
+//通貨ペア取得できた：1、取得できない：0
+
+
+//=======処理の順番について=======
+//①NewCandleStickCheck()：新しいローソク足の判定処理
+//②CandleStickCirculation()：ローソク足の確定後にエントリー条件の確認処理EntryJudgeFunction()を実行
+//③GlocalVariableUpdate()：の実行により取得した各種値をグローバル変数としてアップデートする処理
+//④OrderFuncrion()：グローバル変数を格納後に注文処理
+//⑤注文したポジションにたいていのオーダー確認処理、
+//⑥ピラミッティング判定処理
+//⑦損切り判定処理
+//⑧利益確定処理
+
 //======グローバル変数として保持する値======
 
 //移動平均線の値取得変数宣言(Ontickで取得した値が毎回更新される)
@@ -52,7 +71,74 @@ double get_Candle_end;
 
 //=======業者間の通貨ペアの取得ができるようにする=======
 //サフィックスの設定
-string suffix;
+//string suffix;
+
+//通貨ペア取得フラグ
+int GetCurrencyFlag;
+
+//通貨ペア取得関数
+int GetCurrency(){
+  string CurrencyComment;
+  for (int CurrencyCount = 0;SymbolsTotal(false)-1; i++){
+    //コメント処理で取得できていることを確認する========デバッグ処理
+    CurrencyComment += SymbolName(CurrencyCount, false) +”\n”;
+    //取得した通貨ペアを配列に格納する処理
+    string CurrencyArray[];
+    CurrencyArray += SymbolName(CurrencyCount, false);
+    //通貨ペアを5個まで取得しておく処理
+    if (CurrencyCount == 5)
+    { 
+      break;
+    }
+  }
+  
+  //取得した通貨ペアのサッフィクスを除いた名前を格納する配列
+  string NewCurrencyArray[];
+
+  //取得した通貨ペアの個数分のみループ処理でサフィックスを確認する処理
+  for (int i = 0; i < ArraySize(CurrencyArray); i++)
+  { 
+    //=======取得した通貨のサフィックスを確認する処理=======
+    //サフィックスなしの時の処理(USDJPY)
+    if (StringLen(CurrencyArray[i]) < 6)
+    {
+      //取得した通貨ペアの名前をエキスパートアドバイザーに出力する処理(サフィックスなし=配列更新不要)
+      Print(i + "取得した通貨ペアの名前は" + CurrencyArray[i] + "です。：サフィックスなし");
+      //GetCurrencyFlag = 1;
+    }
+    //サフィックスありの時の処理(USDJPYmicroなど)
+    else if (StringLen(CurrencyArray[i]) > 6)
+    {
+      //取得した通貨ペアの名前をエキスパートアドバイザーに出力する処理(サフィックスあり=配列要更新)
+      Print(i + "取得した通貨ペアの名前は" + CurrencyArray[i] + "です。：サフィックスあり");
+      
+      //===========サフィックスを取り除く処理を追加する===========
+      string symbol;
+      string suffix;
+
+      //通貨ペア名取得処理
+      symbol = StringSubstr(CurrencyArray[i],0,6);
+      //サフィックス取得処理
+      suffix = StringSubstr(CurrencyArray[i], 6, StringLen(CurrencyArray[i]));
+      Print(i + "取得した通貨ペアの名前は" + symbol + "です。：サフィックスは" + suffix + "です。");
+      NewCurrencyArray += symbol[i]
+      //GetCurrencyFlag = 2;
+    }
+    //それ以外の処理
+    else
+    { //注文も飛ばさない処理
+      //GetCurrencyFlag = 0;
+    }
+  }
+  //参照渡しもしくはそのまま配列を渡せる可能性もあるため、一旦この書き方にしておく。
+  return (NewCurrencyArray);
+}
+
+//一度にエントリーできる通貨ペアの数の設定(最大5個まで)、この個数の中でループで条件判定を行う。
+int EntryCurrencyCountMax = 5;
+
+
+//======================全通貨ペアに対して以下の設定を処理を判定する======================
 
 //グローバル変数アップデートフラグ
 int UpdateFlag;
@@ -93,8 +179,8 @@ int GlocalVariableUpdate()
       "安値", Candle_low, "\n", "\n",
       "始値", Candle_start, "\n", "\n",
       "終値", Candle_end);
-
-  return (UpdateFlag);
+   UpdateFlag = 1;
+   return (UpdateFlag);
 }
 
 //連続でエントリーしないために
@@ -110,7 +196,7 @@ int OnInit()
   NewBar = Bars;
 }
 
-//新しいローソク足の生成チェック関数
+//新しいローソク足の生成チェック関数(凍結対策)
 int NewCandleStickCheck()
 {
   //連続でエントリーしないようにする
@@ -145,6 +231,68 @@ int NewCandleStickCheck()
   return (NewCandleStickFlag);
 }
 
+//注文処理フラグ
+int OrderFlag;
+
+//注文処理関数
+int OrderFuncrion(){
+  //注文フィールド(OrderSend関数実行に必要なパラメータ設定)
+  string symbol;
+  int cmd;
+  double volume;
+  double price;
+  int slippage;
+  double stoploss;
+  double takeprofit;
+  string comment;
+  int magic;
+  datetime expiration;
+  color arrow_color;
+  
+  ///上昇エントリー設定処理
+  if (CandleStickCirculation() == 1)
+  {
+    //買い注文設定
+    symbol = 
+    cmd = 
+    volume = 
+    price = 
+    slippage = 
+    stoploss = 
+    takeprofit = 
+    comment = 
+    magic = 
+    expiration = 
+    arrow_color = 
+    OrderFlag = 1;
+  }
+  //下降エントリー設定処理
+  else if (CandleStickCirculation() == 2)
+  {
+    //売り注文設定
+    symbol = 
+    cmd = 
+    volume = 
+    price = 
+    slippage = 
+    stoploss = 
+    takeprofit = 
+    comment = 
+    magic = 
+    expiration = 
+    arrow_color = 
+    OrderFlag = 2;
+  }
+  else
+  {
+    //注文しない
+    OrderFlag = 0;
+  }
+  //OrderSend(Symbol(), OP_BUY, LotsOptimized(), Ask, 3, 0, 0, "", MAGICMA, 0, Blue);
+  Ticket = OrderSend(symbol, cmd, volume, price, slippage, stoploss, takeprofit, "", 20228888, expiration, arrow_color);
+  retrun (OrderFlag);
+}
+
 //ローソク足の陰陽確認フラグ
 int CandleStickCheck;
 
@@ -164,14 +312,14 @@ int OrderCheck()
 //ピラミッティング注文フラグ
 int PyramidingFlag;
 
-//ピラミッティング注文関数
+//ピラミッティング注文関数(ピラミッティング注文をしたチケットとそうでないチケットを管理する処理も入れる。)
 int PyramidingOrder()
 }
 
 //移動平均線&一目均衡表のフラグ
 int OrderFlag;
 
-//エントリー条件関数(トレンド判断)
+//エントリー条件関数(パーフェクトオーダー判定処理)
 int EntryJudgeFunction()
 { //移動平均線の値を取得
   get_MA_5 = iMA(_Symbol, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 0);
@@ -199,7 +347,8 @@ int EntryJudgeFunction()
   if (get_Candle_high > get_Candle_end && get_Candle_end > get_Candle_start && get_Candle_start > get_Candle_low && get_Candle_low > get_SenkouSpanA && get_SenkouSpanA > get_SenkouSpanB)
   {
     OrderFlag = 1;
-    Print("Flag :" + OrderFlag);
+    Print("EntryFlag :" + OrderFlag);
+    //グローバル変数のアップデート関数呼び出し
     GlocalVariableUpdate();
   }
   //======上記で取得した処理フラグをもとに移動平均線とローソク足の位置関係を判定する======
@@ -207,14 +356,15 @@ int EntryJudgeFunction()
   else if (get_Candle_low < get_Candle_end && get_Candle_end < get_Candle_start && get_Candle_start < get_Candle_high && get_Candle_high < get_SenkouSpanA && get_SenkouSpanA < get_SenkouSpanB)
   {
     OrderFlag = 2;
-    Print("Flag :" + OrderFlag);
+    Print("EntryFlag :" + OrderFlag);
+    //グローバル変数のアップデート関数呼び出し
     GlocalVariableUpdate();
   }
   // OrderFlag が 0の時は何もしない
   else
   {
     OrderFlag = 0;
-    Print("Flag :" + OrderFlag);
+    Print("EntryFlag :" + OrderFlag);
     GlocalVariableUpdate();
   }
   return (OrderFlag);
@@ -227,12 +377,16 @@ int CandleStickCirculation()
 { //上昇エントリー
   if (EntryJudgeFunction() == 1)
   {
-    // OrderSend(Symbol(), OP_BUY, LotsOptimized(), Ask, 3, 0, 0, "", MAGICMA, 0, Blue);
+    //注文関数の呼び出し処理(上昇エントリー)
+    //OrderSend(Symbol(), OP_BUY, LotsOptimized(), Ask, 3, 0, 0, "", MAGICMA, 0, Blue);
+    CandleStickFlag = 1;
   }
   //下降エントリー
   else if (EntryJudgeFunction() == 2)
   {
-    // OrderSend(Symbol(), OP_BUY, LotsOptimized(), Ask, 3, 0, 0, "", MAGICMA, 0, Blue);
+    //注文関数の呼び出し処理(下降エントリー)
+    CandleStickFlag = 2;
+    // OrderSend(Symbol(),OP_SELL,LotsOptimized(),Bid,3,0,0,"",MAGICMA,0,Red);
   }
   //ノーエントリー
   else if (EntryJudgeFunction() == 0)
@@ -243,19 +397,31 @@ int CandleStickCirculation()
   }
 }
 
-//トレンド判定後エントリー条件
+
+//トレンド判定後エントリーフラグ
 int TrendJudgeFlag;
 
+//トレンド判定関数
 int TrendJudgeCirculation()
 {
 }
 
-//メイン関数
+//メイン関数(値動きがあるたびに走る処理)
 void OnTick()
 {
   if (NewCandleStickCheck() == 1)
-  {
-    CandleStickCirculation();
+  { 
+    //取得した通貨ペアの個数分エントリー条件の判定処理を実施する処理(想定では最大5回のループ処理)
+    Print("処理開始")
+    for (int LoopCount = 0; i < ArraySize(GetCurrency());)
+    {
+      CandleStickCirculation();
+      Print("ループ回数：" + LoopCount + "回目です。")
+      if(LoopCount == 5){
+        break;
+      }
+    }
+    Print("処理終了")
   }
   else
   {
