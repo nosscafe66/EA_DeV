@@ -9,20 +9,6 @@
 //#property strict
 #define MAGICMA 20228888
 
-//--- input parameters
-input double Lots = 0.01;            //ロット数の設定
-input double MAXLOT = 1;             //最大ロット数の設定
-input double MAXPOSITION = 200;      //最大ポジション数
-input double TAKEPROFIT_WIDTH = 100; //利確幅（単位point）
-input double STOPLOSS_WIDTH = 100;   //損切り幅（単位point）
-input double MaximumRisk = 0.02;
-input double DecreaseFactor = 3;
-input int MovingPeriod = 12;
-input int MovingShift = 6;
-
-//======グローバル変数として保持する値======
-
-//移動平均線の値取得変数宣言(Ontickで取得した値が毎回更新される)
 double MA_5;
 double MA_14;
 double MA_21;
@@ -30,185 +16,96 @@ double MA_60;
 double MA_240;
 double MA_1440;
 
-//一目均衡表の値取得宣言(Ontickで取得した値が毎回更新される)
+double get_MA_5;
+double get_MA_14;
+double get_MA_21;
+double get_MA_60;
+double get_MA_240;
+double get_MA_1440;
+
 double Tenkansen;
 double Kijunsen;
 double SenkouSpanA;
 double SenkouSpanB;
 double ChikouSpan;
 
-//ローソク足の値取得宣言(Ontickで取得した値が毎回更新される)
+double get_Tenkansen;
+double get_Kijunsen;
+double get_SenkouSpanA;
+double get_SenkouSpanB;
+double get_ChikouSpan;
+
 double Candle_high;
 double Candle_low;
 double Candle_start;
 double Candle_end;
 
-//=======業者間の通貨ペアの取得ができるようにする=======
-//サフィックスの設定
-string suffix;
+double get_Candle_high;
+double get_Candle_low;
+double get_Candle_start;
+double get_Candle_end;
 
-//連続でエントリーしないためのフラグ
-datetime time = Time[0];
+int GetCurrencyFlag;
 
-// Print("HELLO LONG");
-
-// CrossMadante用マジックナンバーの設定(自動売買がポジションを管理するための番号)
-
-int orderFlag = 0; //エントリーするかどうかの初期値
-// int orderTotal;//注文数の初期値
-
-//+------------------------------------------------------------------+
-//| Expert initialization function                                   |
-//+------------------------------------------------------------------+
-int OnInit()
+int GetCurrency()
 {
-  //---
-  //---グローバル変数の初期化
-
-  //======インジケーターの可視化======
-
-  //---
-  return (INIT_SUCCEEDED);
-}
-//+------------------------------------------------------------------+
-//| Expert deinitialization function                                 |
-//+------------------------------------------------------------------+
-// void OnDeinit(const int reason)
-//{
-//---
-//}
-//+------------------------------------------------------------------+
-//| Expert tick function                                             |
-//+------------------------------------------------------------------+
-
-#property script_show_confirm 1
-
-double LotsOptimized()
-{
-  double lot = Lots;
-  int orders = HistoryTotal(); // history orders total
-  int losses = 0;              // number of losses orders without a break
-                               //--- select lot size
-  lot = NormalizeDouble(AccountFreeMargin() * MaximumRisk / 1000.0, 1);
-  //--- calcuulate number of losses orders without a break
-  if (DecreaseFactor > 0)
+  string CurrencyComment;
+  for (int CurrencyCount = 0; SymbolsTotal(false) - 1; i++)
   {
-    for (int i = orders - 1; i >= 0; i--)
+    CurrencyComment += SymbolName(CurrencyCount, false) +”\n”;
+    string CurrencyArray[];
+    CurrencyArray += SymbolName(CurrencyCount, false);
+    if (CurrencyCount == 5)
     {
-      if (OrderSelect(i, SELECT_BY_POS, MODE_HISTORY) == false)
-      {
-        Print("Error in history!");
-        break;
-      }
-      if (OrderSymbol() != Symbol() || OrderType() > OP_SELL)
-        continue;
-      //---
-      if (OrderProfit() > 0)
-        break;
-      if (OrderProfit() < 0)
-        losses++;
+      break;
     }
-    if (losses > 1)
-      lot = NormalizeDouble(lot - lot * losses / DecreaseFactor, 1);
   }
-  //--- return lot size
-  if (lot < 0.1)
-    lot = 0.1;
-  return (lot);
+  string NewCurrencyArray[];
+  for (int i = 0; i < ArraySize(CurrencyArray); i++)
+  {
+    if (StringLen(CurrencyArray[i]) < 6)
+    {
+      Print(i + "取得した通貨ペアの名前は" + CurrencyArray[i] + "です。：サフィックスなし");
+      // GetCurrencyFlag = 1;
+    }
+    else if (StringLen(CurrencyArray[i]) > 6)
+    {
+      Print(i + "取得した通貨ペアの名前は" + CurrencyArray[i] + "です。：サフィックスあり");
+
+      string symbol;
+      string suffix;
+      symbol = StringSubstr(CurrencyArray[i], 0, 6);
+      suffix = StringSubstr(CurrencyArray[i], 6, StringLen(CurrencyArray[i]));
+      Print(i + "取得した通貨ペアの名前は" + symbol + "です。：サフィックスは" + suffix + "です。");
+      NewCurrencyArray += symbol[i]
+      // GetCurrencyFlag = 2;
+    }
+    else
+    {
+      // GetCurrencyFlag = 0;
+    }
+  }
+  return (NewCurrencyArray);
 }
 
-//初期関数(価格が動くごとに実行)
-void OnTick()
+int UpdateFlag;
+int GlocalVariableUpdate()
 {
-  //--
-  // OrderSend(Symbol(),OP_BUY,LotsOptimized(),Ask,3,0,0,"",MAGICMA,0,Blue);
-  //現在のポジション数を代入する変数
-  int positionNum = 0;
-
-  //ここに現在のポジション数を更新するプログラムを書く
-
-  //最大ロット数のチェック
-  // if (Lots > MAXLOT)
-  //  Print(MAXLOT);
-  // return;
-
-  //最大ポジション数のチェック
-  // if (positionNum > MAXPOSITION)
-  //  Print(MAXPOSITION);
-  // return;
-
-  //連続でエントリーしないようにする処理
-  // time変数が、現在の時間ではない場合に実行する
-  // if (time != Time[0])
-  // {
-
-  // time変数に、現在の時間を代入
-  // time = Time[0];
-
-  //↓↓↓↓↓↓↓↓↓↓↓↓ここから下にロジックやエントリー注文を書く↓↓↓↓↓↓↓↓↓↓↓↓
-  //=======Cross_Madante用のエントリーロジック======
-
-  //エントリーサンプル（実行しない）
-  // int buy = OrderSend(Symbol(), OP_BUY, LOT, Ask, 30, Ask-STOPLOSS_WIDTH, Ask+TAKEPROFIT_WIDTH, "自動売買を作ろう！", magicNumber, clrNONE);
-
-  //=====移動平均線の値を取得する処理======
-
-  //現在の移動平均線の値と比較を行い,前回の値を下回ったら値を取得する.前回と同じかそれ以上の場合は値を更新しない.
-
-  //======陽線と陰線の判定======
-  //陽線======終値 > 始値：終値 – 始値・上髭の長さについて：高値 – 終値・下髭の長さについて：始値 – 安値
-  //陽線======始値 > 終値：始値 – 終値・上髭の長さについて：高値 – 始値・下髭の長さについて：終値 – 安値
-
-  //======移動平均線・一目均衡表・ローソク足の取得変数
-  // if ()
-  //{ //移動平均線の値を取得
-  double get_MA_5 = iMA(NULL, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 0);
-  double get_MA_14 = iMA(NULL, 0, 14, 0, MODE_SMA, PRICE_CLOSE, 0);
-  double get_MA_21 = iMA(NULL, 0, 21, 0, MODE_SMA, PRICE_CLOSE, 0);
-  double get_MA_60 = iMA(NULL, 0, 60, 0, MODE_SMA, PRICE_CLOSE, 0);
-  double get_MA_240 = iMA(NULL, 0, 240, 0, MODE_SMA, PRICE_CLOSE, 0);
-  double get_MA_1440 = iMA(NULL, 0, 1440, 0, MODE_SMA, PRICE_CLOSE, 0);
-  //}
-
-  //移動平均線の値取得のプリントデバッグ
-  Print(get_MA_5);
-  Print(get_MA_14);
-  Print(get_MA_21);
-  Print(get_MA_60);
-  Print(get_MA_240);
-  Print(get_MA_1440);
-
-  //一目均衡表の値を取得(重要なのは先行スパンA,B=雲になる)
-  double get_Tenkansen = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 0, 1);
-  double get_Kijunsen = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 1, 1);
-  double get_SenkouSpanA = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 2, 1);
-  double get_SenkouSpanB = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 3, 1);
-  double get_ChikouSpan = iCustom(NULL, 0, "Ichimoku", 9, 26, 52, 4, 27);
-
-  //一目均衡表の値取得のプリントデバッグ
-  Print(get_Tenkansen);
-  Print(get_Kijunsen);
-  Print(get_SenkouSpanA);
-  Print(get_SenkouSpanB);
-  Print(get_ChikouSpan);
-
-  //ローソク足の値取得
-  double get_Candle_high = iHigh(NULL, PERIOD_M5, 0);
-  double get_Candle_low = iLow(NULL, PERIOD_M5, 0);
-  double get_Candle_start = iOpen(NULL, PERIOD_M5, 0);
-  double get_Candle_end = iClose(NULL, PERIOD_M5, 0);
-
-  //ローソク足の値取得のプリントデバッグ
-  Print(get_Candle_high);
-  Print(get_Candle_low);
-  Print(get_Candle_start);
-  Print(get_Candle_end);
-
-  //前日のローソク足と当日のローソク足の情報を取得する
-
-  //======移動平均線の傾きを求める
-
-  //======移動平均線の傾きが上昇傾向の傾きかどうかの判断を行う
+  MA_5 = get_MA_5;
+  MA_14 = get_MA_14;
+  MA_21 = get_MA_21;
+  MA_60 = get_MA_60;
+  MA_240 = get_MA_240;
+  MA_1440 = get_MA_1440;
+  Tenkansen = get_Tenkansen;
+  Kijunsen = get_Kijunsen;
+  SenkouSpanA = get_SenkouSpanA;
+  SenkouSpanB = get_SenkouSpanB;
+  ChikouSpan = get_ChikouSpan;
+  Candle_high = get_Candle_high;
+  Candle_low = get_Candle_low;
+  Candle_start = get_Candle_start;
+  Candle_end = get_Candle_end;
 
   Comment(
       "\n",
@@ -217,142 +114,207 @@ void OnTick()
       "21移動平均線：", MA_21, "\n", "\n",
       "60移動平均線：", MA_60, "\n", "\n",
       "240移動平均線：", MA_240, "\n", "\n",
-      "1440移動平均線：", MA_1440);
-  // int buy = OrderSend(Symbol(), OP_BUY, LOT, Ask, 30, Ask - STOPLOSS_WIDTH, Ask + TAKEPROFIT_WIDTH, "自動売買を作ろう！",MAGICMA, clrNONE);
-  // OrderSend(Symbol(), OP_BUY, 0.01, Ask, 0, Bid + 0.1, 0, "Long",MAGICMA, 0, Red);
+      "1440移動平均線：", MA_1440,
+      "転換線", Tenkansen, "\n", "\n",
+      "基準線", Kijunsen, "\n", "\n",
+      "先行スパンA", SenkouSpanA, "\n", "\n",
+      "先行スパンB", SenkouSpanB, "\n", "\n",
+      "遅行スパン", ChikouSpan, "\n", "\n",
+      "高値", Candle_high, "\n", "\n",
+      "安値", Candle_low, "\n", "\n",
+      "始値", Candle_start, "\n", "\n",
+      "終値", Candle_end);
+  UpdateFlag = 1;
+  return (UpdateFlag);
+}
 
-  //======前提条件確認：雲とローソク足の位置関係を判定し上昇トレンドか下降トレンドを判定する======
-  //〜orderFlag=1上昇トレンドエントリーフラグ〜
-  if (get_Candle_high > get_Candle_end && get_Candle_end > get_Candle_start && get_Candle_start > get_Candle_low && get_Candle_low > get_SenkouSpanA && get_SenkouSpanA > get_SenkouSpanB)
-  {
-    orderFlag = 1;
-    // OrderSend(Symbol(),OP_BUY,LotsOptimized(),Ask,3,0,0,"",MAGICMA,0,Blue);
-    Print("Flag :" + orderFlag);
-  }
-  //〜orderFlag=2下降トレンドエントリーフラグ〜
-  else if (get_Candle_low < get_Candle_end && get_Candle_end < get_Candle_start && get_Candle_start < get_Candle_high && get_Candle_high < get_SenkouSpanA && get_SenkouSpanA < get_SenkouSpanB)
-  {
-    orderFlag = 2;
-    Print("Flag :" + orderFlag);
-    // OrderSend(Symbol(),OP_BUY,LotsOptimized(),Ask,3,0,0,"",MAGICMA,0,Blue);
-  }
+datetime time = Time[0];
+int NewCandleStickFlag;
+int NewBar = 0;
 
-  //〜orderFlag=0何もしない〜
+int OnInit()
+{
+  NewBar = Bars;
+}
+
+int NewCandleStickCheck()
+{
+  if (time != Time[0])
+  {
+    time = Time[0];
+    int iCurrentBars = Bars;
+    if (iCurrentBars == NewBar)
+    {
+      NewBar = iCurrentBars;
+      return;
+    }
+    else
+    {
+      NewCandleStickFlag = 1;
+      NewBar = iCurrentBars;
+    }
+  }
   else
   {
-    orderFlag = 0;
-    Print("Flag :" + orderFlag);
+    NewCandleStickFlag = 0;
   }
+  return (NewCandleStickFlag);
+}
+int OrderFlag;
 
-  //======上記で取得した処理フラグをもとに移動平均線とローソク足の位置関係を判定する======
-  //〜上昇トレンド：orderFlag=1〜
-  if (orderFlag == 1)
+int OrderFuncrion()
+{
+
+  string symbol;
+  int cmd;
+  double volume;
+  double price;
+  int slippage;
+  double stoploss;
+  double takeprofit;
+  string comment;
+  int magic;
+  datetime expiration;
+  color arrow_color;
+
+  if (CandleStickCirculation() == 1)
   {
-    if (get_MA_5 > get_MA_14 && get_MA_14 > get_MA_21 && get_MA_21 > get_MA_60 && get_MA_60 > get_MA_240 && get_MA_240 > get_MA_1440)
-    { //ポジションが０の時の注文
-      if (OrdersTotal() == 0)
-      {
-        Print("HELLO LONG");
-        OrderSend(Symbol(), OP_BUY, LotsOptimized(), Ask, 3, 0, 0, "", MAGICMA, 0, Blue);
-      }
-      //ポジションが0以上ならもう一度パーフェクトオーダーかを確認する
-      else if (OrdersTotal() > 0)
-      {
-        //上昇パーフェクトオーダー時の注文関数
-      }
-    }
+
+    symbol =
+    cmd =
+    volume =
+    price =
+    slippage =
+    stoploss =
+    takeprofit =
+    comment =
+    magic =
+    expiration =
+    arrow_color =
+    OrderFlag = 1;
   }
+  //下降エントリー設定処理
+  else if (CandleStickCirculation() == 2)
+  {
+    symbol =
+    cmd =
+    volume =
+    price =
+    slippage =
+    stoploss =
+    takeprofit =
+    comment =
+    magic =
+    expiration =
+    arrow_color =
+    OrderFlag = 2;
+  }
+  else
+  {
+    //注文しない
+    OrderFlag = 0;
+  }
+  Ticket = OrderSend(symbol, cmd, volume, price, slippage, stoploss, takeprofit, "", 20228888, expiration, arrow_color);
+  retrun(OrderFlag);
+}
 
-  //〜下降トレンド：orderFlag=2〜
-  else if (orderFlag == 2)
-  { //ポジションが０の時の注文
-    if (get_MA_5 < get_MA_14 && get_MA_14 < get_MA_21 && get_MA_21 < get_MA_60 && get_MA_60 < get_MA_240 && get_MA_240 < get_MA_1440)
-    {
-      if (OrdersTotal() == 0)
-      {
-        Print("HELLO SHORT");
-        OrderSend(Symbol(), OP_SELL, LotsOptimized(), Bid, 3, 0, 0, "", MAGICMA, 0, Red);
-      }
-      //ポジションが0以上ならもう一度パーフェクトオーダーかを確認する
-      else if (OrdersTotal() > 0)
-      {
-        //下降パーフェクトオーダー時の注文関数
-      }
-    }
-    else
-    {
-      Print("HELLO 10");
-      return;
-    }
+int CandleStickCheck;
+int CandleStickCheck()
+{
+}
 
-    //======CrossMadante用のエントリー条件判定処理(自動売買)======
-    //条件１：取得した移動平均線の値が過去のどの値よりも大きい
+int OrderCheckFlag;
+int OrderCheck()
+{
+}
 
-    //条件２：取得した移動平均線の値がパーフェクトオーダーとなっている(下落の場合：短期 < 中期　< 長期)
+int PyramidingFlag;
+int PyramidingOrder()
+}
 
-    // OrderSend(NULL, OP_BUY, 0.01, Ask, 0, Bid + 0.1, 0, "Long", magicNumber, 0, Red); //ロングエントリー
-    //上昇の場合：短期 > 中期 > 長期
-    if (MA_5 > MA_14 && MA_21 > MA_60 && MA_240 > MA_1440)
-    {
-      // OrderSend(Symbol(),OP_BUY,LotsOptimized(),Ask,3,0,0,"",MAGICMA,0,Blue); //ロングエントリー
-      Print("HELLO LONG");
-    }
+int OrderFlag;
+int EntryJudgeFunction()
+{ 
+  get_MA_5 = iMA(_Symbol, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 0);
+  get_MA_14 = iMA(_Symbol, 0, 14, 0, MODE_SMA, PRICE_CLOSE, 0);
+  get_MA_21 = iMA(_Symbol, 0, 21, 0, MODE_SMA, PRICE_CLOSE, 0);
+  get_MA_60 = iMA(_Symbol, 0, 60, 0, MODE_SMA, PRICE_CLOSE, 0);
+  get_MA_240 = iMA(_Symbol, 0, 240, 0, MODE_SMA, PRICE_CLOSE, 0);
+  get_MA_1440 = iMA(_Symbol, 0, 1440, 0, MODE_SMA, PRICE_CLOSE, 0);
 
-    //下落の場合：短期 < 中期　< 長期
-    else if (MA_5 < MA_14 && MA_21 > MA_60 && MA_240 > MA_1440)
-    {
-      // OrderSend(Symbol(),OP_SELL,LotsOptimized(),Bid,3,0,0,"",MAGICMA,0,Red); //ショートエントリー
-      Print("HELLO SHORT");
-    }
+  get_Tenkansen = iCustom(_Symbol, 0, "Ichimoku", 9, 26, 52, 0, 1);
+  get_Kijunsen = iCustom(_Symbol, 0, "Ichimoku", 9, 26, 52, 1, 1);
+  get_SenkouSpanA = iCustom(_Symbol, 0, "Ichimoku", 9, 26, 52, 2, 1);
+  get_SenkouSpanB = iCustom(_Symbol, 0, "Ichimoku", 9, 26, 52, 3, 1);
+  get_ChikouSpan = iCustom(_Symbol, 0, "Ichimoku", 9, 26, 52, 4, 27);
 
-    else
-    {
-      return;
-    }
-    //条件３：5SMAと最新のローソク足の値の比較を行いエントリーを考える。
+  get_Candle_high = iHigh(_Symbol, PERIOD_M5, 0);
+  get_Candle_low = iLow(_Symbol, PERIOD_M5, 0);
+  get_Candle_start = iOpen(_Symbol, PERIOD_M5, 0);
+  get_Candle_end = iClose(_Symbol, PERIOD_M5, 0);
 
-    //条件4：新しい移動平均線の値が毎回前回の移動平均線の値よりも更新できていることを確認する
-
-    //=======決済ロジック=======
-    //決済ロジック条件の前提条件に移動平均線の値が前回よりも更新しなくなったタイミングを一度判定する。(保有し続けるか一度利益確定するかを判定する)
-
-    for (int j = 0; j < OrdersTotal(); j++)
-    {
-      //ポジションを選択
-      if (OrderSelect(j, SELECT_BY_POS, MODE_TRADES))
-      {
-        //ポジションの通貨ペアとEAの通貨ペアが一致しているか
-        if (OrderSymbol() == Symbol())
-        {
-          //マジックナンバーが一致しているか
-          if (OrderMagicNumber() == MAGICMA)
-          {
-            //買いポジションの場合
-            if (OrderType() == OP_BUY)
-            {
-              positionNum++;
-              //ここに決済ロジックを書く（if文）
-              // bool close = OrderClose(OrderTicket(), OrderLots(), OrderOpenPrice(), SLIPPAGE);
-            }
-            //売りポジションの場合
-            if (OrderType() == OP_SELL)
-            {
-              positionNum++;
-              //ここに決済ロジックを書く（if文）
-              // bool close = OrderClose(OrderTicket(), OrderLots(), OrderOpenPrice(), SLIPPAGE);
-            }
-          }
-        }
-      }
-    }
-    for (int i = OrdersTotal() - 1; i >= 0; i--)
-    {
-      //ここにポジションビの情報を１つ１つチェックするためのプログラムを書く
-      Comment("\n",
-              "現在のポジション: ", i);
-    }
-    //}
+  if (get_Candle_high > get_Candle_end && get_Candle_end > get_Candle_start && get_Candle_start > get_Candle_low && get_Candle_low > get_SenkouSpanA && get_SenkouSpanA > get_SenkouSpanB)
+  {
+    OrderFlag = 1;
+    Print("EntryFlag :" + OrderFlag);
+    GlocalVariableUpdate();
+  }
+  else if (get_Candle_low < get_Candle_end && get_Candle_end < get_Candle_start && get_Candle_start < get_Candle_high && get_Candle_high < get_SenkouSpanA && get_SenkouSpanA < get_SenkouSpanB)
+  {
+    OrderFlag = 2;
+    Print("EntryFlag :" + OrderFlag);
+    GlocalVariableUpdate();
+  }
+  else
+  {
+    OrderFlag = 0;
+    Print("EntryFlag :" + OrderFlag);
+    GlocalVariableUpdate();
+  }
+  return (OrderFlag);
+}
+int CandleStickFlag;
+int CandleStickCirculation()
+{ 
+  if (EntryJudgeFunction() == 1)
+  {
+    CandleStickFlag = 1;
+  }
+  else if (EntryJudgeFunction() == 2)
+  {
+    CandleStickFlag = 2;
+  }
+  else if (EntryJudgeFunction() == 0)
+  {
+    Comment(
+        "\n",
+        "ノーエントリー");
   }
 }
 
-//+------------------------------------------------------------------+
+int TrendJudgeFlag;
+int TrendJudgeCirculation()
+{
+}
+
+void OnTick()
+{
+  if (NewCandleStickCheck() == 1)
+  {
+    Print("処理開始") for (int LoopCount = 0; i < ArraySize(GetCurrency());)
+    {
+      CandleStickCirculation();
+      Print("ループ回数：" + LoopCount + "回目です。") if (LoopCount == 5)
+      {
+        break;
+      }
+    }
+    Print("処理終了")
+  }
+  else
+  {
+    Comment(
+        "\n",
+        "ノーエントリー");
+  }
+}
