@@ -5,6 +5,9 @@ https://yukifx.web.fc2.com/sub/reference/02_stdconstans/object/object_z_OBJ_RECT
 
 ・https://fxantenna.com/how-to-make-ea-practice/
 
+関数一覧
+https://zyunafx.com/mql4_reference/
+
 ・イベント関数について
 https://yukifx.web.fc2.com/sub/reference/01_basic/function/function_event.html
 

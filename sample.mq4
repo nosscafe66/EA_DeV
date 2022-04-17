@@ -316,8 +316,15 @@ int PyramidingFlag;
 int PyramidingOrder()
 }
 
-//移動平均線&一目均衡表のフラグ
-int OrderFlag;
+//決済判断フラグ
+int CloseCheckFlag;
+//決済判断処理関数
+int CloseCheckFunction(){
+
+}
+
+    //移動平均線&一目均衡表のフラグ
+    int OrderFlag;
 
 //エントリー条件関数(パーフェクトオーダー判定処理)
 int EntryJudgeFunction()
