@@ -215,7 +215,7 @@ int OrderFuncrion(string Currency)
     cmd = "OP_BUY";
     volume = "0.1";
     price = "Ask";
-    slippage = 3;
+    slippage = 20;
     stoploss = 0;
     takeprofit = 0;
     comment = "";
@@ -233,7 +233,7 @@ int OrderFuncrion(string Currency)
     cmd = "OP_SELL";
     volume = "0.1";
     price = "Bid";
-    slippage = 3;
+    slippage = 20;
     stoploss = 0;
     takeprofit = 0;
     comment = "";
@@ -247,6 +247,7 @@ int OrderFuncrion(string Currency)
   {
     //注文しない
     OrderFlag = 0;
+    Print("NoEntry");
   }
   return (OrderFlag);
 }
@@ -296,11 +297,11 @@ int CrossMadantePerfectOrder(string Currency)
   get_MA_1440 = iMA(Currency, 0, 1440, 0, MODE_SMA, PRICE_CLOSE, 1);
 
   //一目均衡表の値を取得(重要なのは先行スパンA,B=雲になる)
-  get_Tenkansen = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 0, 1);
-  get_Kijunsen = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 1, 1);
+  //get_Tenkansen = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 0, 1);
+  //get_Kijunsen = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 1, 1);
   get_SenkouSpanA = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 2, 1);
   get_SenkouSpanB = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 3, 1);
-  get_ChikouSpan = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 4, 27);
+  //get_ChikouSpan = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 4, 27);
 
   //ローソク足の値取得
   get_Candle_high = iHigh(Currency, PERIOD_M5, 1);
@@ -356,8 +357,10 @@ int CandleStickCirculation(string Currency)
   {
     Comment(
         "\n",
-        "ノーエントリー");
+        "NoEntry");
   }
+  Print("NoEntry");
+  return (CandleStickFlag);
 }
 
 //トレンド判定後エントリーフラグ
@@ -395,14 +398,20 @@ void OnTick()
 
       //ローソク足の判定処理
       CandleStickFlag = CandleStickCirculation(Currency);
+      Print("CandleStickFlag:" + CandleStickFlag);
       if (CandleStickFlag == 1)
       {
+        Print("UpEntryFlag:" + CandleStickFlag);
+        OrderFuncrion(Currency);
       }
       else if (CandleStickFlag == 2)
       {
+        Print("DownEntryFlag:" + CandleStickFlag);
+        OrderFuncrion(Currency);
       }
       else
       {
+        Print("NoEntry:" + CandleStickFlag);
       }
 
       if (LoopCount == ArraySize(ArraySymbol))
