@@ -68,6 +68,21 @@ double get_Candle_low;
 double get_Candle_start;
 double get_Candle_end;
 
+//=======表示するチャートのカラー設定をする関数(クロスマダンテ仕様)=======
+void setupChart(long chartId = 0)
+{
+  // ローソク足で表示
+  ChartSetInteger(chartId, CHART_MODE, CHART_CANDLES);
+
+  // 買値 (Ask) ラインを表示
+  ChartSetInteger(chartId, CHART_SHOW_ASK_LINE, true);
+
+  // 売値 (Bid) ラインを表示
+  ChartSetInteger(chartId, CHART_SHOW_BID_LINE, true);
+
+  ChartRedraw(chartId);
+}
+
 //=======業者間の通貨ペアの取得ができるようにする=======
 //サフィックスの設定
 // string suffix;
@@ -297,11 +312,11 @@ int CrossMadantePerfectOrder(string Currency)
   get_MA_1440 = iMA(Currency, 0, 1440, 0, MODE_SMA, PRICE_CLOSE, 1);
 
   //一目均衡表の値を取得(重要なのは先行スパンA,B=雲になる)
-  //get_Tenkansen = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 0, 1);
-  //get_Kijunsen = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 1, 1);
+  // get_Tenkansen = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 0, 1);
+  // get_Kijunsen = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 1, 1);
   get_SenkouSpanA = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 2, 1);
   get_SenkouSpanB = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 3, 1);
-  //get_ChikouSpan = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 4, 27);
+  // get_ChikouSpan = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 4, 27);
 
   //ローソク足の値取得
   get_Candle_high = iHigh(Currency, PERIOD_M5, 1);
