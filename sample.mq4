@@ -83,6 +83,7 @@ string modifySymbol(string symbol)
   if (length > 6)
   {
     includedCharacter = StringSubstr(Symbol(), 6, length - 6);
+    Print("通貨ペアは" + symbol + "サフィックスは" + includedCharacter + "です。");
     return (symbol + includedCharacter);
   }
   return (symbol);
@@ -312,7 +313,7 @@ int CrossMadantePerfectOrder(string Currency)
   if (get_Candle_high > get_Candle_end && get_Candle_end > get_Candle_start && get_Candle_start > get_Candle_low && get_Candle_low > get_SenkouSpanA && get_SenkouSpanA > get_SenkouSpanB)
   {
     EntryOrderFlag = 1;
-    Print("EntryFlag :" + EntryOrderFlag);
+    Print("EntryOrderFlag :" + EntryOrderFlag);
     //グローバル変数のアップデート関数呼び出し
     GlocalVariableUpdate();
   }
@@ -321,7 +322,7 @@ int CrossMadantePerfectOrder(string Currency)
   else if (get_Candle_low < get_Candle_end && get_Candle_end < get_Candle_start && get_Candle_start < get_Candle_high && get_Candle_high < get_SenkouSpanA && get_SenkouSpanA < get_SenkouSpanB)
   {
     EntryOrderFlag = 2;
-    Print("EntryFlag :" + EntryOrderFlag);
+    Print("EntryOrderFlag :" + EntryOrderFlag);
     //グローバル変数のアップデート関数呼び出し
     GlocalVariableUpdate();
   }
@@ -329,7 +330,7 @@ int CrossMadantePerfectOrder(string Currency)
   else
   {
     EntryOrderFlag = 0;
-    Print("EntryFlag :" + EntryOrderFlag);
+    Print("EntryOrderFlag :" + EntryOrderFlag);
     GlocalVariableUpdate();
   }
   return (EntryOrderFlag);
@@ -417,4 +418,5 @@ void OnTick()
         "\n",
         "ノーエントリー");
   }
+  Print("ノーエントリー");
 }
