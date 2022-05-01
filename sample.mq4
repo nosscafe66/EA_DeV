@@ -113,7 +113,7 @@ int EntryCurrencyCountMax = 5;
 int UpdateFlag;
 
 //グローバル変数アップデート関数
-int GlocalVariableUpdate(double get_MA_5, double get_MA_14, double get_MA_21, double get_MA_21, double get_MA_60, double get_MA_240, double get_MA_1440, double get_Tenkansen, double get_Kijunsen, double get_SenkouSpanA, double get_SenkouSpanB, double get_ChikouSpan, double get_Candle_high double get_Candle_low, double get_Candle_start, double get_Candle_end)
+int GlocalVariableUpdate(double get_MA_5, double get_MA_14, double get_MA_21 double get_MA_60, double get_MA_240, double get_MA_1440, double get_Tenkansen, double get_Kijunsen, double get_SenkouSpanA, double get_SenkouSpanB, double get_ChikouSpan, double get_Candle_high, double get_Candle_low, double get_Candle_start, double get_Candle_end)
 {
   MA_5 = get_MA_5;
   MA_14 = get_MA_14;
