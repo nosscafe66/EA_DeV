@@ -113,7 +113,7 @@ int EntryCurrencyCountMax = 5;
 int UpdateFlag;
 
 //グローバル変数アップデート関数
-int GlocalVariableUpdate()
+int GlocalVariableUpdate(double get_MA_5, double get_MA_14, double get_MA_21, double get_MA_21, double get_MA_60, double get_MA_240, double get_MA_1440, double get_Tenkansen, double get_Kijunsen, double get_SenkouSpanA, double get_SenkouSpanB, double get_ChikouSpan, double get_Candle_high double get_Candle_low, double get_Candle_start, double get_Candle_end)
 {
   MA_5 = get_MA_5;
   MA_14 = get_MA_14;
@@ -312,11 +312,11 @@ int CrossMadantePerfectOrder(string Currency)
   get_MA_1440 = iMA(Currency, 0, 1440, 0, MODE_SMA, PRICE_CLOSE, 1);
 
   //一目均衡表の値を取得(重要なのは先行スパンA,B=雲になる)
-  // get_Tenkansen = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 0, 1);
-  // get_Kijunsen = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 1, 1);
+  get_Tenkansen = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 0, 1);
+  get_Kijunsen = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 1, 1);
   get_SenkouSpanA = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 2, 1);
   get_SenkouSpanB = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 3, 1);
-  // get_ChikouSpan = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 4, 27);
+  get_ChikouSpan = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 4, 27);
 
   //ローソク足の値取得
   get_Candle_high = iHigh(Currency, PERIOD_M5, 1);
@@ -331,7 +331,23 @@ int CrossMadantePerfectOrder(string Currency)
     EntryOrderFlag = 1;
     Print("EntryOrderFlag :" + EntryOrderFlag);
     //グローバル変数のアップデート関数呼び出し
-    GlocalVariableUpdate();
+    GlocalVariableUpdate(
+        get_MA_5
+        , get_MA_14
+        , get_MA_21
+        , get_MA_60
+        , get_MA_240
+        , get_MA_1440
+        , get_Tenkansen
+        , get_Kijunsen
+        , get_SenkouSpanA
+        , get_SenkouSpanB
+        , get_ChikouSpan
+        , get_Candle_high
+        , get_Candle_low
+        , get_Candle_start
+        , get_Candle_end
+    );
   }
   //======上記で取得した処理フラグをもとに移動平均線とローソク足の位置関係を判定する======
   // OrderFlag が 2の時は下降エントリー
@@ -340,7 +356,22 @@ int CrossMadantePerfectOrder(string Currency)
     EntryOrderFlag = 2;
     Print("EntryOrderFlag :" + EntryOrderFlag);
     //グローバル変数のアップデート関数呼び出し
-    GlocalVariableUpdate();
+    GlocalVariableUpdate(
+        get_MA_5
+        , get_MA_14
+        , get_MA_21
+        , get_MA_60
+        , get_MA_240
+        , get_MA_1440
+        , get_Tenkansen
+        , get_Kijunsen
+        , get_SenkouSpanA
+        , get_SenkouSpanB
+        , get_ChikouSpan
+        , get_Candle_high
+        , get_Candle_low
+        , get_Candle_start
+        , get_Candle_end);
   }
   // OrderFlag が 0の時は何もしない
   else
