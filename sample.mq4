@@ -205,7 +205,7 @@ int NewCandleStickCheck()
 //注文処理フラグ
 int OrderFlag;
 
-//注文処理関数
+//注文処理関数(チケットを発行する処理)
 int OrderFuncrion(string Currency)
 {
   //注文フィールド(OrderSend関数実行に必要なパラメータ設定)
@@ -264,23 +264,29 @@ int OrderFuncrion(string Currency)
     OrderFlag = 0;
     Print("NoEntry");
   }
-  return (OrderFlag);
+  return (Ticket);
 }
 
 //ローソク足の陰陽確認フラグ
 int CandleStickCheck;
 
-//ローソク足の陰陽確認関数
+//ローソク足の陰陽確認関数(髭と実体の確認も行う)
 int CandleStickCheck()
 {
 }
 
+//新規の売買注文を入れるための条件」と「決済注文を入れるための条件」
+//現在ポジションがあるのか、そのポジションが「買い」なのか「売り」なのか
+//ポジション判定：0(なし)、買い(1)、売り(2)
 //注文数の確認フラグ
-int OrderCheckFlag;
+int OrderCheckFlag = 0;
 
 //注文確認関数
-int OrderCheck()
+int OrderCheck(int Ticket)
 {
+  if(OrderSelect(int position|int ticket, SELECT_BY_POS|SELECT_BY_TICKET, int pool=MODE_TRADES|MODE_HISTORY)){
+
+  }
 }
 
 //ピラミッティング注文フラグ
