@@ -68,6 +68,9 @@ double get_Candle_low;
 double get_Candle_start;
 double get_Candle_end;
 
+//注文時の；チケット番号
+int Ticket = 0;
+
 //=======表示するチャートのカラー設定をする関数(クロスマダンテ仕様)=======
 void setupChart(long chartId = 0)
 {
@@ -113,7 +116,7 @@ int EntryCurrencyCountMax = 5;
 int UpdateFlag;
 
 //グローバル変数アップデート関数
-int GlocalVariableUpdate(double get_MA_5, double get_MA_14, double get_MA_21 double get_MA_60, double get_MA_240, double get_MA_1440, double get_Tenkansen, double get_Kijunsen, double get_SenkouSpanA, double get_SenkouSpanB, double get_ChikouSpan, double get_Candle_high, double get_Candle_low, double get_Candle_start, double get_Candle_end)
+int GlocalVariableUpdate(double get_MA_5, double get_MA_14, double get_MA_21, double get_MA_60, double get_MA_240, double get_MA_1440, double get_Tenkansen, double get_Kijunsen, double get_SenkouSpanA, double get_SenkouSpanB, double get_ChikouSpan, double get_Candle_high, double get_Candle_low, double get_Candle_start, double get_Candle_end)
 {
   MA_5 = get_MA_5;
   MA_14 = get_MA_14;
@@ -282,10 +285,38 @@ int CandleStickCheck()
 int OrderCheckFlag = 0;
 
 //注文確認関数
-int OrderCheck(int Ticket)
+int OrderCheck(int Ticket, int CandleStickFlag)
 {
-  if(OrderSelect(int position|int ticket, SELECT_BY_POS|SELECT_BY_TICKET, int pool=MODE_TRADES|MODE_HISTORY)){
-
+  //未決済ポジションの判定処理を行う
+  if (OrderSelect(Ticket, SELECT_BY_TICKET) && OrderCloseTime() == 0)
+  {
+    //買いの未決済ポジション判定処理
+    if (OrderType() == OP_BUY)
+    {
+      OrderCheckFlag = 1;
+    }
+    //売りの未決済ポジション判定処理
+    if (OrderType() == OP_SELL)
+    {
+      OrderCheckFlag = 2;
+    }
+  }
+  bool res; //決済状況
+  //上昇エントリーフラグ(買いシグナル)
+  if (CandleStickFlag == 1)
+  {
+    //売りポジションがある場合の決済処理
+    if (OrderCheckFlag == 2)
+    {
+    }
+  }
+  //下降エントリーフラグ(売りシグナル)
+  else if (CandleStickFlag == 2)
+  {
+    //買いポジションがある場合の決済処理
+    if (OrderCheckFlag == 1)
+    {
+    }
   }
 }
 
@@ -338,22 +369,7 @@ int CrossMadantePerfectOrder(string Currency)
     Print("EntryOrderFlag :" + EntryOrderFlag);
     //グローバル変数のアップデート関数呼び出し
     GlocalVariableUpdate(
-        get_MA_5
-        , get_MA_14
-        , get_MA_21
-        , get_MA_60
-        , get_MA_240
-        , get_MA_1440
-        , get_Tenkansen
-        , get_Kijunsen
-        , get_SenkouSpanA
-        , get_SenkouSpanB
-        , get_ChikouSpan
-        , get_Candle_high
-        , get_Candle_low
-        , get_Candle_start
-        , get_Candle_end
-    );
+        get_MA_5, get_MA_14, get_MA_21, get_MA_60, get_MA_240, get_MA_1440, get_Tenkansen, get_Kijunsen, get_SenkouSpanA, get_SenkouSpanB, get_ChikouSpan, get_Candle_high, get_Candle_low, get_Candle_start, get_Candle_end);
   }
   //======上記で取得した処理フラグをもとに移動平均線とローソク足の位置関係を判定する======
   // OrderFlag が 2の時は下降エントリー
@@ -363,28 +379,14 @@ int CrossMadantePerfectOrder(string Currency)
     Print("EntryOrderFlag :" + EntryOrderFlag);
     //グローバル変数のアップデート関数呼び出し
     GlocalVariableUpdate(
-        get_MA_5
-        , get_MA_14
-        , get_MA_21
-        , get_MA_60
-        , get_MA_240
-        , get_MA_1440
-        , get_Tenkansen
-        , get_Kijunsen
-        , get_SenkouSpanA
-        , get_SenkouSpanB
-        , get_ChikouSpan
-        , get_Candle_high
-        , get_Candle_low
-        , get_Candle_start
-        , get_Candle_end);
+        get_MA_5, get_MA_14, get_MA_21, get_MA_60, get_MA_240, get_MA_1440, get_Tenkansen, get_Kijunsen, get_SenkouSpanA, get_SenkouSpanB, get_ChikouSpan, get_Candle_high, get_Candle_low, get_Candle_start, get_Candle_end);
   }
   // OrderFlag が 0の時は何もしない
   else
   {
     EntryOrderFlag = 0;
     Print("EntryOrderFlag :" + EntryOrderFlag);
-    //GlocalVariableUpdate();
+    // GlocalVariableUpdate();
   }
   return (EntryOrderFlag);
 }
@@ -454,12 +456,18 @@ void OnTick()
       if (CandleStickFlag == 1)
       {
         Print("UpEntryFlag:" + CandleStickFlag);
-        OrderFuncrion(Currency);
+        //注文処理(チケット発行)
+        Ticket = OrderFuncrion(Currency);
+        //決済処理
+        OrderCheck(Ticket, CandleStickFlag);
       }
       else if (CandleStickFlag == 2)
       {
         Print("DownEntryFlag:" + CandleStickFlag);
-        OrderFuncrion(Currency);
+        //注文処理(チケット発行)
+        Ticket = OrderFuncrion(Currency);
+        //決済処理
+        OrderCheck(Ticket, CandleStickFlag);
       }
       else
       {
@@ -478,6 +486,6 @@ void OnTick()
     Comment(
         "\n",
         "ノーエントリー");
+    Print("ノーエントリー");
   }
-  Print("ノーエントリー");
 }
