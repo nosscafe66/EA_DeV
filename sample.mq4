@@ -378,7 +378,7 @@ int CrossMadantePerfectOrder(string Currency)
   {
     EntryOrderFlag = 0;
     Print("EntryOrderFlag :" + EntryOrderFlag);
-    GlocalVariableUpdate();
+    //GlocalVariableUpdate();
   }
   return (EntryOrderFlag);
 }
