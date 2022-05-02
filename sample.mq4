@@ -68,8 +68,14 @@ double get_Candle_low;
 double get_Candle_start;
 double get_Candle_end;
 
-//注文時の；チケット番号
+// 注文時の；チケット番号
 int Ticket = 0;
+
+// クロスマダンテの損切り値幅
+int LossCut = 20;
+
+// 新しいローソク足の確認フラグ
+int NewCandleStickCheckFlag;
 
 //=======表示するチャートのカラー設定をする関数(クロスマダンテ仕様)=======
 void setupChart(long chartId = 0)
@@ -82,6 +88,24 @@ void setupChart(long chartId = 0)
 
   // 売値 (Bid) ラインを表示
   ChartSetInteger(chartId, CHART_SHOW_BID_LINE, true);
+
+  // 背景のグリッド線の設定表示
+  ChartSetInteger(chartId, CHART_COLOR_GRID, clrNONE);
+
+  // 背景のカラー設定表示
+  ChartSetInteger(chartId, CHART_COLOR_BACKGROUND, clrWhite);
+
+  // ローソク足の設定表示
+  ChartSetInteger(chartId, CHART_COLOR_CHART_UP, clrBlue);
+  ChartSetInteger(chartId, CHART_COLOR_CHART_DOWN, clrRed);
+  ChartSetInteger(chartId, CHART_COLOR_CANDLE_BULL, clrBlue);
+  ChartSetInteger(chartId, CHART_COLOR_CANDLE_BEAR, clrRed);
+
+  // ChartSetInteger(chartId, , );
+  // ChartSetInteger(chartId, , );
+  // ChartSetInteger(chartId, , );
+  // ChartSetInteger(chartId, , );
+  // ChartSetInteger(chartId, , );
 
   ChartRedraw(chartId);
 }
@@ -167,8 +191,8 @@ int OnInit()
 {
   //起動時に現在のバーを記録
   NewBar = Bars;
+  setupChart();
 }
-
 //新しいローソク足の生成チェック関数(凍結対策)
 int NewCandleStickCheck()
 {
@@ -226,38 +250,39 @@ int OrderFuncrion(string Currency)
   int Ticket;
 
   ///上昇エントリー設定処理
-  if (CandleStickCirculation(Currency) == 1)
+  OrderFlag = CandleStickCirculation(Currency);
+  if (OrderFlag == 1)
   {
     //買い注文設定
     symbol = Currency;
-    cmd = "OP_BUY";
-    volume = "0.1";
-    price = "Ask";
-    slippage = 20;
-    stoploss = 0;
+    cmd = OP_BUY;
+    volume = 0.1;
+    price = Ask;
+    slippage = 30;
+    stoploss = 20;
     takeprofit = 0;
     comment = "";
     magic = 20228888;
     expiration = 0;
-    arrow_color = "Blue";
+    arrow_color = clrBlue;
     Ticket = OrderSend(symbol, cmd, volume, price, slippage, stoploss, takeprofit, "", magic, expiration, arrow_color);
     OrderFlag = 1;
   }
   //下降エントリー設定処理
-  else if (CandleStickCirculation(Currency) == 2)
+  else if (OrderFlag == 2)
   {
     //売り注文設定
     symbol = Currency;
-    cmd = "OP_SELL";
-    volume = "0.1";
-    price = "Bid";
-    slippage = 20;
-    stoploss = 0;
+    cmd = OP_SELL;
+    volume = 0.1;
+    price = Bid;
+    slippage = 30;
+    stoploss = 20;
     takeprofit = 0;
     comment = "";
     magic = 20228888;
     expiration = 0;
-    arrow_color = "Red";
+    arrow_color = clrRed;
     Ticket = OrderSend(symbol, cmd, volume, price, slippage, stoploss, takeprofit, "", magic, expiration, arrow_color);
     OrderFlag = 2;
   }
@@ -275,7 +300,7 @@ int CandleStickCheck;
 
 //ローソク足の陰陽確認関数(髭と実体の確認も行う)
 int CandleStickCheck()
-{
+
 }
 
 //新規の売買注文を入れるための条件」と「決済注文を入れるための条件」
@@ -302,21 +327,33 @@ int OrderCheck(int Ticket, int CandleStickFlag)
     }
   }
   bool res; //決済状況
-  //上昇エントリーフラグ(買いシグナル)
+  //上昇エントリーフラグ(買いシグナル：クロスマダンテパーフェクトオーダー条件フラグ)
   if (CandleStickFlag == 1)
   {
     //売りポジションがある場合の決済処理
     if (OrderCheckFlag == 2)
     {
+      res = OrderClose(Ticket, OrderLots(), OrderClosePrice(), 0);
+      if (res)
+      {
+        OrderCheckFlag = 0;
+      }
     }
+    return (OrderCheckFlag);
   }
-  //下降エントリーフラグ(売りシグナル)
+  //下降エントリーフラグ(売りシグナル：クロスマダンテパーフェクトオーダー条件フラグ)
   else if (CandleStickFlag == 2)
   {
     //買いポジションがある場合の決済処理
     if (OrderCheckFlag == 1)
     {
+      res = OrderClose(Ticket, OrderLots(), OrderClosePrice(), 0);
+      if (res)
+      {
+        OrderCheckFlag = 0;
+      }
     }
+    return (OrderCheckFlag);
   }
 }
 
@@ -354,6 +391,7 @@ int CrossMadantePerfectOrder(string Currency)
   get_SenkouSpanA = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 2, 1);
   get_SenkouSpanB = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 3, 1);
   get_ChikouSpan = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 4, 27);
+  // iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 0, 1);
 
   //ローソク足の値取得
   get_Candle_high = iHigh(Currency, PERIOD_M5, 1);
@@ -397,17 +435,18 @@ int CandleStickFlag;
 //ローソク足の判定関数
 int CandleStickCirculation(string Currency)
 { //上昇エントリー
-  if (CrossMadantePerfectOrder(Currency) == 1)
+  CandleStickFlag = CrossMadantePerfectOrder(Currency);
+  if (CandleStickFlag == 1)
   {
     CandleStickFlag = 1;
   }
   //下降エントリー
-  else if (CrossMadantePerfectOrder(Currency) == 2)
+  else if (CandleStickFlag == 2)
   {
     CandleStickFlag = 2;
   }
   //ノーエントリー
-  else if (CrossMadantePerfectOrder(Currency) == 0)
+  else if (CandleStickFlag == 0)
   {
     Comment(
         "\n",
@@ -428,18 +467,17 @@ int TrendJudgeCirculation()
 //メイン関数(値動きがあるたびに走る処理)
 void OnTick()
 {
-
   //通貨ペアの指定
   string ArraySymbol[5] = {"USDJPY", "EURUSD", "GBPUSD", "GBPJPY", "AUDJPY"};
   //通貨ペアのコメント表示
   Comment(modifySymbol(ArraySymbol[0]) + "¥n" + modifySymbol(ArraySymbol[1]) + "¥n" + modifySymbol(ArraySymbol[2]) + "¥n" + modifySymbol(ArraySymbol[3]) + "¥n" + modifySymbol(ArraySymbol[4]));
-
-  //新しいローソク足ができていることを確認する
-  if (NewCandleStickCheck() == 1)
+  //新しいローソク足ができていることを確認してから処理を開始
+  NewCandleStickCheckFlag = NewCandleStickCheck();
+  if (NewCandleStickCheckFlag == 1)
   {
     //取得した通貨ペアの個数分エントリー条件の判定処理を実施する処理(想定では最大5回のループ処理)
     Print("処理開始");
-    //配列に格納している通貨ペアの個数分(条件判定・エントリー判定の処理を行う)
+    //配列に格納している通貨ペアの個数分(条件判定・エントリー判定の処理を行う、決済判定の処理を行う)
     for (int LoopCount = 0; LoopCount < ArraySize(ArraySymbol); LoopCount++)
     {
       Print("ループ回数：" + LoopCount + "回目です。 現在の通貨は" + ArraySymbol[LoopCount] + "です。");
@@ -453,33 +491,58 @@ void OnTick()
       //ローソク足の判定処理
       CandleStickFlag = CandleStickCirculation(Currency);
       Print("CandleStickFlag:" + CandleStickFlag);
+      //上昇エントリーフラグ
       if (CandleStickFlag == 1)
       {
         Print("UpEntryFlag:" + CandleStickFlag);
         //注文処理(チケット発行)
         Ticket = OrderFuncrion(Currency);
-        //決済処理
-        OrderCheck(Ticket, CandleStickFlag);
+        if (Ticket != -1)
+        {
+          Print("チケット番号:" + Ticket + " UpEntryFlag:" + CandleStickFlag);
+          //決済処理
+          OrderCheckFlag = OrderCheck(Ticket, CandleStickFlag);
+          if (OrderCheckFlag == 0)
+          {
+            OrderFuncrion(Currency);
+          }
+        }
+        else if (Ticket == -1)
+        {
+          Print("チケット番号:" + Ticket + " UpEntryFailed:" + CandleStickFlag);
+        }
       }
+      //下降エントリーフラグ
       else if (CandleStickFlag == 2)
       {
         Print("DownEntryFlag:" + CandleStickFlag);
         //注文処理(チケット発行)
         Ticket = OrderFuncrion(Currency);
-        //決済処理
-        OrderCheck(Ticket, CandleStickFlag);
+        if (Ticket != -1)
+        {
+          Print("チケット番号:" + Ticket + " DownEntryFlag:" + CandleStickFlag);
+          //決済処理
+          OrderCheckFlag = OrderCheck(Ticket, CandleStickFlag);
+          if (OrderCheckFlag == 0)
+          {
+            OrderFuncrion(Currency);
+          }
+        }
+        else if (Ticket == -1)
+        {
+          Print("チケット番号:" + Ticket + " DownEntryFailed:" + CandleStickFlag);
+        }
+        else
+        {
+          Print("NoEntry:" + CandleStickFlag);
+        }
+        if (LoopCount == ArraySize(ArraySymbol))
+        {
+          break;
+        }
       }
-      else
-      {
-        Print("NoEntry:" + CandleStickFlag);
-      }
-
-      if (LoopCount == ArraySize(ArraySymbol))
-      {
-        break;
-      }
+      Print("処理終了");
     }
-    Print("処理終了");
   }
   else
   {
