@@ -379,21 +379,6 @@ int EntryOrderFlag;
 //クロスマダンテエントリー条件関数(パーフェクトオーダー判定処理)
 int CrossMadantePerfectOrder(string Currency)
 {
-  //実体の大きさと髭の大きさ
-  double Candle_Entity;
-  double Candle_Beard_Up;
-  double Candle_Beard_Down;
-  double Total_Candle;
-
-  //実体と髭比率変数
-  double Compare_Candle;
-
-  //陽線判定処理
-  double Positive_line = get_Candle_end - get_Candle_start;
-
-  //陰線判定処理
-  double Hidden_line = get_Candle_start - get_Candle_end;
-
   //移動平均線の値を取得
   get_MA_5 = iMA(Currency, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 1);
   get_MA_14 = iMA(Currency, 0, 14, 0, MODE_SMA, PRICE_CLOSE, 1);
@@ -416,12 +401,31 @@ int CrossMadantePerfectOrder(string Currency)
   get_Candle_start = iOpen(Currency, PERIOD_M5, 1);
   get_Candle_end = iClose(Currency, PERIOD_M5, 1);
 
+  //実体の大きさと髭の大きさ
+  double Candle_Entity;
+  double Candle_Beard_Up;
+  double Candle_Beard_Down;
+  double Total_Candle;
+
+  //実体と髭比率変数
+  double Compare_Candle;
+
+  //陽線判定処理
+  double Positive_line = get_Candle_end - get_Candle_start;
+
+  //陰線判定処理
+  double Hidden_line = get_Candle_start - get_Candle_end;
+
+  //移動平均線とローソク足の乖離を確認
+  double Kairi_Value;
+
   //======前提条件確認：雲とローソク足の位置関係を判定し上昇トレンドか下降トレンドを判定する======
   /// OrderFlag が 1の時は上昇エントリー
-  //上昇パーフェクトオーダーの条件判定処理
+  //上昇パーフェクトオーダーの条件判定処理(大前提条件)
   if (get_MA_5 > get_MA_14 && get_MA_14 > get_MA_21 && get_MA_21 > get_MA_60 && get_MA_60 > get_MA_240 && get_MA_240 > get_MA_1440)
-  {
-    if (get_Candle_high > get_Candle_end && get_Candle_end > get_Candle_start && get_Candle_start > get_Candle_low && get_Candle_low > get_SenkouSpanA && get_SenkouSpanA > get_SenkouSpanB)
+  { 
+    //ローソク足の雲の内外存在判定処理
+    if (get_Candle_high > get_Candle_end && get_Candle_end > get_Candle_start && get_Candle_start > get_Candle_low && get_Candle_low > get_SenkouSpanA)
     {
       //確定したひとつ前のローソク足の陽線判定
       if (Positive_line > 0)
@@ -432,15 +436,19 @@ int CrossMadantePerfectOrder(string Currency)
         Candle_Beard_Down = get_Candle_start - get_Candle_low; //下髭
         Total_Candle = Candle_Entity + Candle_Beard_Up + Candle_Beard_Down;
         Compare_Candle = Candle_Beard_Up * 100 / Total_Candle; //実体と髭の比率を算定
-
-        //ローソク足全体から髭長さが50%以下の際の判定処理
+        //ローソク足全体から髭長さが50%以下の際の判定処理(実体が多いローソク足)
         if (Compare_Candle < 50)
         {
+          // 5SMAのローソク足陽線上抜け条件判定処理(例外として移動平均から乖離しすぎている場合はエントリーしない)
+          Kairi_Value = (get_Candle_end - get_MA_5) * 100 / get_MA_5
+          if (get_Candle_high > get_Candle_end && get_Candle_end > get_MA_5 && Kairi_Value < 0.25)
+          {
           EntryOrderFlag = 1;
           Print("EntryOrderFlag :" + EntryOrderFlag); //いずれ消す
           //グローバル変数のアップデート関数呼び出し
           GlocalVariableUpdate(
               get_MA_5, get_MA_14, get_MA_21, get_MA_60, get_MA_240, get_MA_1440, get_Tenkansen, get_Kijunsen, get_SenkouSpanA, get_SenkouSpanB, get_ChikouSpan, get_Candle_high, get_Candle_low, get_Candle_start, get_Candle_end);
+          }
         }
       }
     }
@@ -456,7 +464,7 @@ int CrossMadantePerfectOrder(string Currency)
   //下降パーフェクトオーダーの条件判定処理
   else if (get_MA_5 < get_MA_14 && get_MA_14 < get_MA_21 && get_MA_21 < get_MA_60 && get_MA_60 < get_MA_240 && get_MA_240 < get_MA_1440)
   {
-    if (get_Candle_low < get_Candle_end && get_Candle_end < get_Candle_start && get_Candle_start < get_Candle_high && get_Candle_high < get_SenkouSpanA && get_SenkouSpanA < get_SenkouSpanB)
+    if (get_Candle_low < get_Candle_end && get_Candle_end < get_Candle_start && get_Candle_start < get_Candle_high && get_Candle_high < get_SenkouSpanA)
     {
       //確定したひとつ前のローソク足の陰線判定
       if (Hidden_line > 0)
@@ -471,11 +479,16 @@ int CrossMadantePerfectOrder(string Currency)
         //ローソク足全体から髭長さが50%以下の際の判定処理
         if (Compare_Candle < 50)
         {
-          EntryOrderFlag = 2;
-          Print("EntryOrderFlag :" + EntryOrderFlag); //いずれ消す
-          //グローバル変数のアップデート関数呼び出し
-          GlocalVariableUpdate(
-              get_MA_5, get_MA_14, get_MA_21, get_MA_60, get_MA_240, get_MA_1440, get_Tenkansen, get_Kijunsen, get_SenkouSpanA, get_SenkouSpanB, get_ChikouSpan, get_Candle_high, get_Candle_low, get_Candle_start, get_Candle_end);
+          // 5SMAのローソク陰線下抜け条件判定処理(例外として移動平均から乖離しすぎている場合はエントリーしない)
+          Kairi_Value = ((get_MA_5 - get_Candle_end) * 100 / get_MA_5) * 100
+          if (get_Candle_low < get_Candle_end && get_Candle_end > get_MA_5 && Kairi_Value < 10)
+          {
+            EntryOrderFlag = 2;
+            Print("EntryOrderFlag :" + EntryOrderFlag); //いずれ消す
+            //グローバル変数のアップデート関数呼び出し
+            GlocalVariableUpdate(
+                get_MA_5, get_MA_14, get_MA_21, get_MA_60, get_MA_240, get_MA_1440, get_Tenkansen, get_Kijunsen, get_SenkouSpanA, get_SenkouSpanB, get_ChikouSpan, get_Candle_high, get_Candle_low, get_Candle_start, get_Candle_end);
+          }
         }
       }
     }
@@ -588,6 +601,7 @@ void OnTick()
         {
           Print("NoEntry:" + EntryOrderFlag); //いずれ消す
         }
+        //通貨の個数とループ回数がマッチしたらループを終了する処理
         if (LoopCount == ArraySize(ArraySymbol))
         {
           break;
