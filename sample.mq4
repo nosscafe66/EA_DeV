@@ -440,7 +440,7 @@ int CrossMadantePerfectOrder(string Currency)
         if (Compare_Candle < 50)
         {
           // 5SMAのローソク足陽線上抜け条件判定処理(例外として移動平均から乖離しすぎている場合はエントリーしない)
-          Kairi_Value = (get_Candle_end - get_MA_5) * 100 / get_MA_5
+          Kairi_Value = (get_Candle_end - get_MA_5) * 100 / get_MA_5;
           if (get_Candle_high > get_Candle_end && get_Candle_end > get_MA_5 && Kairi_Value < 0.25)
           {
           EntryOrderFlag = 1;
@@ -480,7 +480,7 @@ int CrossMadantePerfectOrder(string Currency)
         if (Compare_Candle < 50)
         {
           // 5SMAのローソク陰線下抜け条件判定処理(例外として移動平均から乖離しすぎている場合はエントリーしない)
-          Kairi_Value = ((get_MA_5 - get_Candle_end) * 100 / get_MA_5) * 100
+          Kairi_Value = ((get_MA_5 - get_Candle_end) * 100 / get_MA_5) * 100;
           if (get_Candle_low < get_Candle_end && get_Candle_end > get_MA_5 && Kairi_Value < 10)
           {
             EntryOrderFlag = 2;
