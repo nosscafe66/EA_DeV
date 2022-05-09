@@ -472,6 +472,7 @@ int CrossMadantePerfectOrder(string Currency)
   //下降パーフェクトオーダーの条件判定処理
   else if (get_MA_5 < get_MA_14 && get_MA_14 < get_MA_21 && get_MA_21 < get_MA_60 && get_MA_60 < get_MA_240 && get_MA_240 < get_MA_1440)
   {
+    //ローソク足の雲の内外存在判定処理
     if (get_Candle_low < get_Candle_end && get_Candle_end < get_Candle_start && get_Candle_start < get_Candle_high && get_Candle_high < get_SenkouSpanA)
     {
       //確定したひとつ前のローソク足の陰線判定
