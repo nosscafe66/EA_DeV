@@ -6,6 +6,24 @@ https://labo.gogojungle.co.jp/articles/102
 ・mql4カラー
 https://www.mql5.com/en/docs/constants/objectconstants/webcolors
 
+・移動平均とローソク足の乖離
+https://mossan-dayo.com/moving-average-deviation-rate
+
+・XMのPIPSレート
+https://fx-mtrading.com/xm-pips/#toc_id_2_2
+
+・通貨ペア補正
+https://labo.gogojungle.co.jp/articles/81
+
+・TeamViewr
+https://trading-toolbox.net/pages/968.html
+
+・配列
+https://fx-kirin.com/mt4/mt4_mql_programing/mt4-programming-no11/
+
+・LINE開発
+https://notify-bot.line.me/doc/ja/
+
 ・LINE
 https://note.com/narita_fx/n/nba64f1af9c81
 
@@ -15,6 +33,9 @@ https://blog.abc-fx.com/?page_id=11006
 
 ・メール配信
 https://www.dr-ea.com/meta-blog/metatrader4/ea-sakusei/mail-function.html
+
+・陰線と陽線の求め方
+https://trade-engineer.com/candlestick-type/
 
 
 ・EA開発の指南書
