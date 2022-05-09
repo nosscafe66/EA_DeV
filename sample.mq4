@@ -27,6 +27,9 @@
 //⑦損切り判定処理
 //⑧利益確定処理
 
+input string Line_token = "";   // LINEのアクセストークン
+input string Send_Message = ""; // LINEに送りたいメッセージ
+
 //======グローバル変数として保持する値======
 
 //移動平均線の値取得変数宣言(Ontickで取得した値が毎回更新される)
@@ -67,6 +70,9 @@ double get_Candle_high;
 double get_Candle_low;
 double get_Candle_start;
 double get_Candle_end;
+
+//メッセージ変数宣言
+string Message;
 
 // 注文時の；チケット番号
 int Ticket = 0;
@@ -200,6 +206,8 @@ int OnInit()
   //起動時に現在のバーを記録
   NewBar = Bars;
   setupChart();
+  LineNotify(Line_token, Send_Message); // LineNotifyを呼び出し
+  return (INIT_SUCCEEDED);
 }
 //新しいローソク足の生成チェック関数(凍結対策)
 int NewCandleStickCheck()
@@ -431,7 +439,7 @@ int CrossMadantePerfectOrder(string Currency)
   /// OrderFlag が 1の時は上昇エントリー
   //上昇パーフェクトオーダーの条件判定処理(大前提条件)
   if (get_MA_5 > get_MA_14 && get_MA_14 > get_MA_21 && get_MA_21 > get_MA_60 && get_MA_60 > get_MA_240 && get_MA_240 > get_MA_1440)
-  { 
+  {
     //ローソク足の雲の内外存在判定処理
     if (get_Candle_high > get_Candle_end && get_Candle_end > get_Candle_start && get_Candle_start > get_Candle_low && get_Candle_low > get_SenkouSpanA)
     {
@@ -451,11 +459,13 @@ int CrossMadantePerfectOrder(string Currency)
           Kairi_Value = (get_Candle_end - get_MA_5) * 100 / get_MA_5;
           if (get_Candle_high > get_Candle_end && get_Candle_end > get_MA_5 && Kairi_Value < 0.25)
           {
-          EntryOrderFlag = 1;
-          Print("EntryOrderFlag :" + EntryOrderFlag); //いずれ消す
-          //グローバル変数のアップデート関数呼び出し
-          GlocalVariableUpdate(
-              get_MA_5, get_MA_14, get_MA_21, get_MA_60, get_MA_240, get_MA_1440, get_Tenkansen, get_Kijunsen, get_SenkouSpanA, get_SenkouSpanB, get_ChikouSpan, get_Candle_high, get_Candle_low, get_Candle_start, get_Candle_end);
+            EntryOrderFlag = 1;
+            Message = "買いサイン Ticket番号：" + Ticket;
+            LineNotify(Line_token, Message);
+            Print("EntryOrderFlag :" + EntryOrderFlag); //いずれ消す
+            //グローバル変数のアップデート関数呼び出し
+            GlocalVariableUpdate(
+                get_MA_5, get_MA_14, get_MA_21, get_MA_60, get_MA_240, get_MA_1440, get_Tenkansen, get_Kijunsen, get_SenkouSpanA, get_SenkouSpanB, get_ChikouSpan, get_Candle_high, get_Candle_low, get_Candle_start, get_Candle_end);
           }
         }
       }
@@ -493,6 +503,8 @@ int CrossMadantePerfectOrder(string Currency)
           if (get_Candle_low < get_Candle_end && get_Candle_end > get_MA_5 && Kairi_Value < 10)
           {
             EntryOrderFlag = 2;
+            Message = "売りサイン Ticket番号：" + Ticket;
+            LineNotify(Line_token, Message);
             Print("EntryOrderFlag :" + EntryOrderFlag); //いずれ消す
             //グローバル変数のアップデート関数呼び出し
             GlocalVariableUpdate(
@@ -533,6 +545,22 @@ double TrailingStop = 20;
 
 int TraillingStopFunction()
 {
+}
+
+// LINE配信処理
+void LineNotify(string Token, string Message)
+{
+  string headers;        //ヘッダー
+  char data[], result[]; //データ、結果
+
+  headers = "Authorization: Bearer " + Token + "\r\n	application/x-www-form-urlencoded\r\n";
+  ArrayResize(data, StringToCharArray("message=" + Message, data, 0, WHOLE_ARRAY, CP_UTF8) - 1);
+  int res = WebRequest("POST", "https://notify-api.line.me/api/notify", headers, 0, data, data, headers);
+  if (res == -1) //エラーの場合
+  {
+    Print("Error in WebRequest. Error code  =", GetLastError());
+    MessageBox("Add the address 'https://notify-api.line.me' in the list of allowed URLs on tab 'Expert Advisors'", "Error", MB_ICONINFORMATION);
+  }
 }
 
 //メイン関数(値動きがあるたびに走る処理)

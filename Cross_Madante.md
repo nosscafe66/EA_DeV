@@ -3,6 +3,13 @@
 ・mql4カラー
 https://www.mql5.com/en/docs/constants/objectconstants/webcolors
 
+・LINE
+https://note.com/narita_fx/n/nba64f1af9c81
+
+・LINE通知
+https://creator.fx-ea-system-project.com/mt4-expert-adviser/line-ea/
+https://blog.abc-fx.com/?page_id=11006
+
 
 ・EA開発の指南書
 https://yukifx.web.fc2.com/sub/reference/02_stdconstans/object/object_z_OBJ_RECTANGLE_LABEL.html
