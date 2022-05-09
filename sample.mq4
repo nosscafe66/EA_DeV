@@ -77,6 +77,12 @@ int LossCut = 20;
 // 新しいローソク足の確認フラグ
 int NewCandleStickCheckFlag;
 
+//指定したメールアドレスに送信する関数 or LINEにする。
+bool SendMail(
+    string subject,  // header
+    string some_text // email text
+);
+
 //=======表示するチャートのカラー設定をする関数(クロスマダンテ仕様)=======
 void setupChart(long chartId = 0)
 {
@@ -85,15 +91,17 @@ void setupChart(long chartId = 0)
 
   // 買値 (Ask) ラインを表示
   ChartSetInteger(chartId, CHART_SHOW_ASK_LINE, true);
+  ChartSetInteger(chartId, CHART_COLOR_BID, clrDodgerBlue);
 
   // 売値 (Bid) ラインを表示
   ChartSetInteger(chartId, CHART_SHOW_BID_LINE, true);
+  ChartSetInteger(chartId, CHART_COLOR_ASK, clrOrangeRed);
 
   // 背景のグリッド線の設定表示
   ChartSetInteger(chartId, CHART_COLOR_GRID, clrNONE);
 
   // 背景のカラー設定表示
-  ChartSetInteger(chartId, CHART_COLOR_BACKGROUND, clrWhite);
+  ChartSetInteger(chartId, CHART_COLOR_BACKGROUND, clrBlack);
 
   // ローソク足の設定表示
   ChartSetInteger(chartId, CHART_COLOR_CHART_UP, clrBlue);

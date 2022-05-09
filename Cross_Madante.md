@@ -1,5 +1,9 @@
 # 開発で調査したこと
 
+・mql4カラー
+https://www.mql5.com/en/docs/constants/objectconstants/webcolors
+
+
 ・EA開発の指南書
 https://yukifx.web.fc2.com/sub/reference/02_stdconstans/object/object_z_OBJ_RECTANGLE_LABEL.html
 
