@@ -460,7 +460,7 @@ int CrossMadantePerfectOrder(string Currency)
           if (get_Candle_high > get_Candle_end && get_Candle_end > get_MA_5 && Kairi_Value < 0.25)
           {
             EntryOrderFlag = 1;
-            Message = "買いサイン Ticket番号：" + Ticket;
+            Message = "Currency： " + Currency + "OrderType： BUY"+"Ticket番号：" + Ticket;
             LineNotify(Line_token, Message);
             Print("EntryOrderFlag :" + EntryOrderFlag); //いずれ消す
             //グローバル変数のアップデート関数呼び出し
@@ -503,7 +503,7 @@ int CrossMadantePerfectOrder(string Currency)
           if (get_Candle_low < get_Candle_end && get_Candle_end > get_MA_5 && Kairi_Value < 10)
           {
             EntryOrderFlag = 2;
-            Message = "売りサイン Ticket番号：" + Ticket;
+            Message = "Currency： " + Currency + "OrderType： SELL" + "Ticket番号：" + Ticket;
             LineNotify(Line_token, Message);
             Print("EntryOrderFlag :" + EntryOrderFlag); //いずれ消す
             //グローバル変数のアップデート関数呼び出し
