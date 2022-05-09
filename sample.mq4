@@ -547,7 +547,7 @@ int TraillingStopFunction()
 {
 }
 
-// LINE配信処理
+// LINE配信機能
 void LineNotify(string Token, string Message)
 {
   string headers;        //ヘッダー

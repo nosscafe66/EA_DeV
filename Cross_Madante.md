@@ -1,5 +1,8 @@
 # 開発で調査したこと
 
+・MQLコードチェック
+https://labo.gogojungle.co.jp/articles/102
+
 ・mql4カラー
 https://www.mql5.com/en/docs/constants/objectconstants/webcolors
 
@@ -9,6 +12,9 @@ https://note.com/narita_fx/n/nba64f1af9c81
 ・LINE通知
 https://creator.fx-ea-system-project.com/mt4-expert-adviser/line-ea/
 https://blog.abc-fx.com/?page_id=11006
+
+・メール配信
+https://www.dr-ea.com/meta-blog/metatrader4/ea-sakusei/mail-function.html
 
 
 ・EA開発の指南書
