@@ -1,5 +1,45 @@
 # 開発で調査したこと
 
+mql4
+https://yryr.me/money/about-mql4.html
+https://maths-in-industry.org/2021/10/01/mql4/
+https://fx.zerokara-blog.com/ea-programming-guid-s006/
+https://sherry-toushi.com/mt4-programming-guide/
+https://maths-in-industry.org/2021/10/01/mql4/
+https://kacchanblog.com/fx/ea-moving-average-mq4
+https://www.tradeatoz.biz/mt4-the-story-of-an-attempt-to-create-an-order-tool-0-prepared-mql4/
+
+
+カラー
+https://yukifx.web.fc2.com/sub/reference/01_basic/data_type/datatype_int_color.html
+https://www.dr-ea.com/meta-blog/metatrader4/mql4-reference/language-basics/mql4-color.html
+
+チャート色
+https://blog.codinal-systems.com/window_black
+/https://memoja.net/p/rn6kw8j/
+https://blog.codinal-systems.com/arrow/
+http://mt4program.blogspot.com/2015/10/mt4ma_8.html
+http://free-creative-innovation.com/mt4_mql4/blog/memo/m_20180819.html
+
+移動平均傾き
+https://creator.fx-ea-system-project.com/mt4-indicator/ma-angle/
+https://fxinspect.com/archives/31754
+
+シグナル
+https://celebpanda.com/columns/reference/2626/
+
+トレール
+https://get-daze.net/2018/10/12/mt4-trailingstop/
+
+オブジェクトタイプ
+https://celebpanda.com/columns/reference/2071/
+https://celebpanda.com/columns/reference/2031/
+https://celebpanda.com/columns/reference/1625/
+https://celebpanda.com/mql4reference/#i-15
+
+・
+https://yukifx.web.fc2.com/sub/reference/02_stdconstans/chart/chart_chartproperty.html
+
 ・MQLコードチェック
 https://labo.gogojungle.co.jp/articles/102
 
@@ -8,6 +48,10 @@ https://www.mql5.com/en/docs/constants/objectconstants/webcolors
 
 ・移動平均とローソク足の乖離
 https://mossan-dayo.com/moving-average-deviation-rate
+https://humidity50.com/archives/post-14750html
+https://autofx100.com/2018/07/21/%E3%83%92%E3%82%B2%E3%81%AE%E9%95%B7%E3%81%95%E3%82%92%E8%A8%88%E7%AE%97%E3%81%99%E3%82%8B%E9%96%A2%E6%95%B0/
+https://fx-prog.com/ea-hige/
+https://blog.codinal-systems.com/getbody/
 
 ・XMのPIPSレート
 https://fx-mtrading.com/xm-pips/#toc_id_2_2
