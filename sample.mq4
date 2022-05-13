@@ -615,8 +615,7 @@ void LineNotify(string Token, string Message){
 }
 
 //メイン関数(値動きがあるたびに走る処理)
-void OnTick()
-{
+void OnTick(){
   //通貨ペアの指定
   string ArraySymbol[5] = {"USDJPY", "EURUSD", "GBPUSD", "GBPJPY", "AUDJPY"}; //希望としてはトレンドの発生しやすい通貨など、、手入力のパラメーターでもいい。
 
@@ -625,13 +624,11 @@ void OnTick()
 
   //新しいローソク足ができていることを確認してから処理を開始
   NewCandleStickCheckFlag = NewCandleStickCheck(); //======関数1======
-  if (NewCandleStickCheckFlag == 1)
-  {
+  if (NewCandleStickCheckFlag == 1){
     //取得した通貨ペアの個数分エントリー条件の判定処理を実施する処理(想定では最大5回のループ処理)
     Print("処理開始"); //いずれ消す
     //配列に格納している通貨ペアの個数分(条件判定・エントリー判定の処理を行う、決済判定の処理を行う)
-    for (int LoopCount = 0; LoopCount < ArraySize(ArraySymbol); LoopCount++)
-    {
+    for (int LoopCount = 0; LoopCount < ArraySize(ArraySymbol); LoopCount++){
       Print("ループ回数：" + LoopCount + "回目です。 現在の通貨は" + ArraySymbol[LoopCount] + "です。"); //いずれ消す
 
       //通貨ペアの変数宣言
@@ -645,61 +642,50 @@ void OnTick()
 
       Print("CandleStickFlag:" + EntryOrderFlag); //いずれ消す
       //上昇エントリーフラグ
-      if (EntryOrderFlag == 1)
-      {
+      if (EntryOrderFlag == 1){
         Print("UpEntryFlag:" + EntryOrderFlag); //いずれ消す
         //注文処理(チケット発行)
         Ticket = OrderFuncrion(Currency, EntryOrderFlag);
-        if (Ticket != -1)
-        {
+        if (Ticket != -1){
           Print("チケット番号:" + Ticket + " UpEntryFlag:" + EntryOrderFlag); //いずれ消す
           //決済処理
           OrderCheckFlag = OrderCheck(Ticket, EntryOrderFlag);
-          if (OrderCheckFlag == 0)
-          {
+          if (OrderCheckFlag == 0){
             OrderFuncrion(Currency, EntryOrderFlag);
           }
         }
-        else if (Ticket == -1)
-        {
+        else if (Ticket == -1){
           Print("チケット番号:" + Ticket + " UpEntryFailed:" + EntryOrderFlag); //いずれ消す
         }
       }
       //下降エントリーフラグ
-      else if (EntryOrderFlag == 2)
-      {
+      else if (EntryOrderFlag == 2){
         Print("DownEntryFlag:" + EntryOrderFlag); //いずれ消す
         //注文処理(チケット発行)
         Ticket = OrderFuncrion(Currency, EntryOrderFlag);
-        if (Ticket != -1)
-        {
+        if (Ticket != -1){
           Print("チケット番号:" + Ticket + " DownEntryFlag:" + EntryOrderFlag); //いずれ消す
           //決済処理(雲の中に隠れてしまった場合・20pips固定のどちらかの条件に当てはまった場合に損切りを行う)
           OrderCheckFlag = OrderCheck(Ticket, EntryOrderFlag);
-          if (OrderCheckFlag == 0)
-          {
+          if (OrderCheckFlag == 0){
             OrderFuncrion(Currency, EntryOrderFlag);
           }
         }
-        else if (Ticket == -1)
-        {
+        else if (Ticket == -1){
           Print("チケット番号:" + Ticket + " DownEntryFailed:" + EntryOrderFlag); //いずれ消す
         }
-        else
-        {
+        else{
           Print("NoEntry:" + EntryOrderFlag); //いずれ消す
         }
         //通貨の個数とループ回数がマッチしたらループを終了する処理
-        if (LoopCount == ArraySize(ArraySymbol))
-        {
+        if (LoopCount == ArraySize(ArraySymbol)){
           break;
         }
       }
       Print("処理終了"); //いずれ消す
     }
   }
-  else
-  {
+  else{
     Comment(
         "\n",
         "ノーエントリー");
