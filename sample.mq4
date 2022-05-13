@@ -80,6 +80,9 @@ int Ticket = 0;
 // クロスマダンテの損切り値幅
 int LossCut = 20;
 
+//ロット管理
+double Lots = OrderLots();
+
 // 新しいローソク足の確認フラグ
 int NewCandleStickCheckFlag;
 
@@ -343,8 +346,19 @@ int OrderCheck(int Ticket, int CandleStickFlag)
       OrderCheckFlag = 2;
     }
   }
+
+  //損失のあるポジションを判定する処理
+  if(){
+  
+  }
+  //利益のあるポジションを判定する処理
+  else if(){
+  
+  }
+
   bool res; //決済状況
   //上昇エントリーフラグ(買いシグナル：クロスマダンテパーフェクトオーダー条件フラグ)
+  Lots = OrderLots(); 
   if (CandleStickFlag == 1)
   {
     //売りポジションがある場合の決済処理
@@ -543,13 +557,50 @@ int TrendJudgeCirculation()
 //買いポジションの場合、価格が上昇したら、その上昇した価格の20ポイント下にロスカットラインを引き上げる設定
 double TrailingStop = 20;
 
-int TraillingStopFunction()
+int TraillingStopFunction(int Ticket, int CandleStickFlag)
 {
+  //未決済ポジションの判定処理を行う
+  if (OrderSelect(Ticket, SELECT_BY_TICKET) && OrderCloseTime() == 0)
+  {
+    //買いの未決済ポジション判定処理
+    if (OrderType() == OP_BUY){
+      OrderCheckFlag = 1;
+    }
+    //売りの未決済ポジション判定処理
+    if (OrderType() == OP_SELL){
+      OrderCheckFlag = 2;
+    }
+  }
+  //未決済買いポジションのトレーリングストップ
+  if (OrderCheckFlag == 1){
+    //未決済買いポジションのトレーリングストップ発動条件
+    //トレール幅が0以上
+    if(TrailingStop > 0){
+      //
+      if (Bid - OrderOpenPrice() > Point * TrailingStop){
+        
+      }
+      if (OrderStopLoss() < Bid - Point * TrailingStop){
+        
+      }
+    }
+  }
+  //未決済売りポジションのトレーリングストップ
+  if (OrderCheckFlag == 2){
+    //未決済売りポジションのトレーリングストップ発動条件
+    if (TrailingStop > 0){
+      if ((OrderOpenPrice() - Ask) > (Point * TrailingStop)){
+
+      }
+      if ((OrderStopLoss() > (Ask + Point * TrailingStop)) || (OrderStopLoss() == 0)){
+
+      }
+    }
+  }
 }
 
 // LINE配信機能
-void LineNotify(string Token, string Message)
-{
+void LineNotify(string Token, string Message){
   string headers;        //ヘッダー
   char data[], result[]; //データ、結果
 
