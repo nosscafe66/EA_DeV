@@ -562,22 +562,31 @@ int TrendJudgeCirculation()
 //買いポジションの場合、価格が上昇したら、その上昇した価格の20ポイント下にロスカットラインを引き上げる設定
 double TrailingStop = 20;
 
-int TraillingStopFunction(int Ticket, int CandleStickFlag,string Currency)
+int TraillingStopFunction(int CandleStickFlag, string Currency, int Ticket)
 {
+  int modified;
+  double Max_Stop_Loss_Buy;
+  double Max_Stop_Loss_Sell;
+  double Current_Stop = OrderStopLoss();
+
   //未決済ポジションの判定処理を行う(取引中のポジション全てに対して確認する)
-  for (int OrderIndex = 0; OrderIndex < OrdersTotal(); OrderIndex++){
-    if (OrderSelect(OrderIndex,SELECT_BY_POS, MODE_TRADES)==false){
+  for (int OrderIndex = 0; OrderIndex < OrdersTotal(); OrderIndex++)
+  {
+    if (OrderSelect(OrderIndex, SELECT_BY_POS, MODE_TRADES) == false)
+    {
       if (OrderMagicNumber() != MAGICMA || OrderSymbol() != Currency)
       {
         //買いの未決済ポジション判定処理
         if (OrderType() == OP_BUY)
         {
           OrderCheckBuyFlag = 1;
+          Max_Stop_Loss_Buy = Bid - TrailingStop * Point;
         }
         //売りの未決済ポジション判定処理
         if (OrderType() == OP_SELL)
         {
           OrderCheckSellFlag = 2;
+          Max_Stop_Loss_Sell = Ask + TrailingStop * Point;
         }
       }
       //未決済買いポジションのトレーリングストップ
@@ -589,7 +598,7 @@ int TraillingStopFunction(int Ticket, int CandleStickFlag,string Currency)
           {
             if (OrderStopLoss() < Bid - Point * TrailingStop)
             {
-
+              OrderModify(OrderTicket(), OrderOpenPrice(), Max_Stop_Loss_Buy, 0, 0);
             }
           }
         }
@@ -603,7 +612,7 @@ int TraillingStopFunction(int Ticket, int CandleStickFlag,string Currency)
           {
             if ((OrderStopLoss() > (Ask + Point * TrailingStop)) || (OrderStopLoss() == 0))
             {
-
+              OrderModify(OrderTicket(), OrderOpenPrice(), Max_Stop_Loss_Sell, 0, 0);
             }
           }
         }
@@ -640,6 +649,7 @@ void OnTick()
   //オーダーが0から5つのポジションの時に実行をする
   if (OrdersTotal() < 0 && OrdersTotal() < 5)
   {
+    Print("現在のポジション数" + OrdersTotal());
     //新しいローソク足ができていることを確認してから処理を開始
     NewCandleStickCheckFlag = NewCandleStickCheck(); //======関数1======
     if (NewCandleStickCheckFlag == 1)
@@ -667,6 +677,7 @@ void OnTick()
           Print("UpEntryFlag:" + EntryOrderFlag); //いずれ消す
           //注文処理(チケット発行)
           Ticket = OrderFuncrion(Currency, EntryOrderFlag);
+          TraillingStopFunction(EntryOrderFlag, Currency, Ticket);
           if (Ticket != -1)
           {
             Print("チケット番号:" + Ticket + " UpEntryFlag:" + EntryOrderFlag); //いずれ消す
@@ -688,6 +699,7 @@ void OnTick()
           Print("DownEntryFlag:" + EntryOrderFlag); //いずれ消す
           //注文処理(チケット発行)
           Ticket = OrderFuncrion(Currency, EntryOrderFlag);
+          TraillingStopFunction(EntryOrderFlag, Currency, Ticket);
           if (Ticket != -1)
           {
             Print("チケット番号:" + Ticket + " DownEntryFlag:" + EntryOrderFlag); //いずれ消す
@@ -725,6 +737,7 @@ void OnTick()
   }
   else
   {
+    Print("ポジションの最大数に達しています。" + OrdersTotal());
     Comment(
         "\n",
         "オーダーが5以上のためエントリーなし");
