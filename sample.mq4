@@ -71,6 +71,12 @@ double get_Candle_low;
 double get_Candle_start;
 double get_Candle_end;
 
+//トレーリングストップ用のオーダーチェックフラグ
+int OrderCheckBuyFlag = 0;
+int OrderCheckSellFlag = 0;
+
+int OrderCheckFlag;
+
 //メッセージ変数宣言
 string Message;
 
@@ -282,7 +288,7 @@ int OrderFuncrion(string Currency, int EntryOrderFlag)
     stoploss = 20;
     takeprofit = 0;
     comment = "";
-    magic = 20228888;
+    magic = MAGICMA;
     expiration = 0;
     arrow_color = clrBlue;
     Ticket = OrderSend(symbol, cmd, volume, price, slippage, stoploss, takeprofit, "", magic, expiration, arrow_color);
@@ -300,7 +306,7 @@ int OrderFuncrion(string Currency, int EntryOrderFlag)
     stoploss = 20;
     takeprofit = 0;
     comment = "";
-    magic = 20228888;
+    magic = MAGICMA;
     expiration = 0;
     arrow_color = clrRed;
     Ticket = OrderSend(symbol, cmd, volume, price, slippage, stoploss, takeprofit, "", magic, expiration, arrow_color);
@@ -327,7 +333,6 @@ int CandleStickCheck()
 //現在ポジションがあるのか、そのポジションが「買い」なのか「売り」なのか
 //ポジション判定：0(なし)、買い(1)、売り(2)
 //注文数の確認フラグ
-int OrderCheckFlag = 0;
 
 //注文確認関数
 int OrderCheck(int Ticket, int CandleStickFlag)
@@ -348,17 +353,17 @@ int OrderCheck(int Ticket, int CandleStickFlag)
   }
 
   //損失のあるポジションを判定する処理
-  if(){
-  
-  }
+  // if(){
+
+  //}
   //利益のあるポジションを判定する処理
-  else if(){
-  
-  }
+  // else if(){
+
+  //}
 
   bool res; //決済状況
   //上昇エントリーフラグ(買いシグナル：クロスマダンテパーフェクトオーダー条件フラグ)
-  Lots = OrderLots(); 
+  Lots = OrderLots();
   if (CandleStickFlag == 1)
   {
     //売りポジションがある場合の決済処理
@@ -474,7 +479,7 @@ int CrossMadantePerfectOrder(string Currency)
           if (get_Candle_high > get_Candle_end && get_Candle_end > get_MA_5 && Kairi_Value < 0.25)
           {
             EntryOrderFlag = 1;
-            Message = "Currency： " + Currency + ", OrderType： BUY"+", Ticket番号：" + Ticket;
+            Message = "Currency： " + Currency + ", OrderType： BUY" + ", Ticket番号：" + Ticket;
             LineNotify(Line_token, Message);
             Print("EntryOrderFlag :" + EntryOrderFlag); //いずれ消す
             //グローバル変数のアップデート関数呼び出し
@@ -557,50 +562,59 @@ int TrendJudgeCirculation()
 //買いポジションの場合、価格が上昇したら、その上昇した価格の20ポイント下にロスカットラインを引き上げる設定
 double TrailingStop = 20;
 
-int TraillingStopFunction(int Ticket, int CandleStickFlag)
+int TraillingStopFunction(int Ticket, int CandleStickFlag,string Currency)
 {
-  //未決済ポジションの判定処理を行う
-  if (OrderSelect(Ticket, SELECT_BY_TICKET) && OrderCloseTime() == 0)
-  {
-    //買いの未決済ポジション判定処理
-    if (OrderType() == OP_BUY){
-      OrderCheckFlag = 1;
-    }
-    //売りの未決済ポジション判定処理
-    if (OrderType() == OP_SELL){
-      OrderCheckFlag = 2;
-    }
-  }
-  //未決済買いポジションのトレーリングストップ
-  if (OrderCheckFlag == 1){
-    //未決済買いポジションのトレーリングストップ発動条件
-    //トレール幅が0以上
-    if(TrailingStop > 0){
-      //
-      if (Bid - OrderOpenPrice() > Point * TrailingStop){
-        
+  //未決済ポジションの判定処理を行う(取引中のポジション全てに対して確認する)
+  for (int OrderIndex = 0; OrderIndex < OrdersTotal(); OrderIndex++){
+    if (OrderSelect(OrderIndex,SELECT_BY_POS, MODE_TRADES)==false){
+      if (OrderMagicNumber() != MAGICMA || OrderSymbol() != Currency)
+      {
+        //買いの未決済ポジション判定処理
+        if (OrderType() == OP_BUY)
+        {
+          OrderCheckBuyFlag = 1;
+        }
+        //売りの未決済ポジション判定処理
+        if (OrderType() == OP_SELL)
+        {
+          OrderCheckSellFlag = 2;
+        }
       }
-      if (OrderStopLoss() < Bid - Point * TrailingStop){
-        
-      }
-    }
-  }
-  //未決済売りポジションのトレーリングストップ
-  if (OrderCheckFlag == 2){
-    //未決済売りポジションのトレーリングストップ発動条件
-    if (TrailingStop > 0){
-      if ((OrderOpenPrice() - Ask) > (Point * TrailingStop)){
+      //未決済買いポジションのトレーリングストップ
+      if (OrderCheckBuyFlag == 1)
+      {
+        if (TrailingStop > 0)
+        {
+          if (Bid - OrderOpenPrice() > Point * TrailingStop)
+          {
+            if (OrderStopLoss() < Bid - Point * TrailingStop)
+            {
 
+            }
+          }
+        }
       }
-      if ((OrderStopLoss() > (Ask + Point * TrailingStop)) || (OrderStopLoss() == 0)){
+      //未決済売りポジションのトレーリングストップ
+      if (OrderCheckSellFlag == 2)
+      {
+        if (TrailingStop > 0)
+        {
+          if ((OrderOpenPrice() - Ask) > (Point * TrailingStop))
+          {
+            if ((OrderStopLoss() > (Ask + Point * TrailingStop)) || (OrderStopLoss() == 0))
+            {
 
+            }
+          }
+        }
       }
     }
   }
 }
 
 // LINE配信機能
-void LineNotify(string Token, string Message){
+void LineNotify(string Token, string Message)
+{
   string headers;        //ヘッダー
   char data[], result[]; //データ、結果
 
@@ -615,80 +629,105 @@ void LineNotify(string Token, string Message){
 }
 
 //メイン関数(値動きがあるたびに走る処理)
-void OnTick(){
+void OnTick()
+{
   //通貨ペアの指定
   string ArraySymbol[5] = {"USDJPY", "EURUSD", "GBPUSD", "GBPJPY", "AUDJPY"}; //希望としてはトレンドの発生しやすい通貨など、、手入力のパラメーターでもいい。
 
   //通貨ペアのコメント表示
   Comment(modifySymbol(ArraySymbol[0]) + "¥n" + modifySymbol(ArraySymbol[1]) + "¥n" + modifySymbol(ArraySymbol[2]) + "¥n" + modifySymbol(ArraySymbol[3]) + "¥n" + modifySymbol(ArraySymbol[4]));
 
-  //新しいローソク足ができていることを確認してから処理を開始
-  NewCandleStickCheckFlag = NewCandleStickCheck(); //======関数1======
-  if (NewCandleStickCheckFlag == 1){
-    //取得した通貨ペアの個数分エントリー条件の判定処理を実施する処理(想定では最大5回のループ処理)
-    Print("処理開始"); //いずれ消す
-    //配列に格納している通貨ペアの個数分(条件判定・エントリー判定の処理を行う、決済判定の処理を行う)
-    for (int LoopCount = 0; LoopCount < ArraySize(ArraySymbol); LoopCount++){
-      Print("ループ回数：" + LoopCount + "回目です。 現在の通貨は" + ArraySymbol[LoopCount] + "です。"); //いずれ消す
+  //オーダーが0から5つのポジションの時に実行をする
+  if (OrdersTotal() < 0 && OrdersTotal() < 5)
+  {
+    //新しいローソク足ができていることを確認してから処理を開始
+    NewCandleStickCheckFlag = NewCandleStickCheck(); //======関数1======
+    if (NewCandleStickCheckFlag == 1)
+    {
+      //取得した通貨ペアの個数分エントリー条件の判定処理を実施する処理(想定では最大5回のループ処理)
+      Print("処理開始"); //いずれ消す
+      //配列に格納している通貨ペアの個数分(条件判定・エントリー判定の処理を行う、決済判定の処理を行う)
+      for (int LoopCount = 0; LoopCount < ArraySize(ArraySymbol); LoopCount++)
+      {
+        Print("ループ回数：" + LoopCount + "回目です。 現在の通貨は" + ArraySymbol[LoopCount] + "です。"); //いずれ消す
 
-      //通貨ペアの変数宣言
-      string Currency;
-      //通貨ペアの名称取得
-      Currency = modifySymbol(ArraySymbol[LoopCount]); //======関数2======
-      //〜注文処理を実行する〜
+        //通貨ペアの変数宣言
+        string Currency;
+        //通貨ペアの名称取得
+        Currency = modifySymbol(ArraySymbol[LoopCount]); //======関数2======
+        //〜注文処理を実行する〜
 
-      //クロスマダンテエントリー条件判定処理
-      EntryOrderFlag = CrossMadantePerfectOrder(Currency); //======関数3======
+        //クロスマダンテエントリー条件判定処理
+        EntryOrderFlag = CrossMadantePerfectOrder(Currency); //======関数3======
 
-      Print("CandleStickFlag:" + EntryOrderFlag); //いずれ消す
-      //上昇エントリーフラグ
-      if (EntryOrderFlag == 1){
-        Print("UpEntryFlag:" + EntryOrderFlag); //いずれ消す
-        //注文処理(チケット発行)
-        Ticket = OrderFuncrion(Currency, EntryOrderFlag);
-        if (Ticket != -1){
-          Print("チケット番号:" + Ticket + " UpEntryFlag:" + EntryOrderFlag); //いずれ消す
-          //決済処理
-          OrderCheckFlag = OrderCheck(Ticket, EntryOrderFlag);
-          if (OrderCheckFlag == 0){
-            OrderFuncrion(Currency, EntryOrderFlag);
+        Print("CandleStickFlag:" + EntryOrderFlag); //いずれ消す
+        //上昇エントリーフラグ
+        if (EntryOrderFlag == 1)
+        {
+          Print("UpEntryFlag:" + EntryOrderFlag); //いずれ消す
+          //注文処理(チケット発行)
+          Ticket = OrderFuncrion(Currency, EntryOrderFlag);
+          if (Ticket != -1)
+          {
+            Print("チケット番号:" + Ticket + " UpEntryFlag:" + EntryOrderFlag); //いずれ消す
+            //決済処理
+            OrderCheckFlag = OrderCheck(Ticket, EntryOrderFlag);
+            if (OrderCheckFlag == 0)
+            {
+              OrderFuncrion(Currency, EntryOrderFlag);
+            }
+          }
+          else if (Ticket == -1)
+          {
+            Print("チケット番号:" + Ticket + " UpEntryFailed:" + EntryOrderFlag); //いずれ消す
           }
         }
-        else if (Ticket == -1){
-          Print("チケット番号:" + Ticket + " UpEntryFailed:" + EntryOrderFlag); //いずれ消す
-        }
-      }
-      //下降エントリーフラグ
-      else if (EntryOrderFlag == 2){
-        Print("DownEntryFlag:" + EntryOrderFlag); //いずれ消す
-        //注文処理(チケット発行)
-        Ticket = OrderFuncrion(Currency, EntryOrderFlag);
-        if (Ticket != -1){
-          Print("チケット番号:" + Ticket + " DownEntryFlag:" + EntryOrderFlag); //いずれ消す
-          //決済処理(雲の中に隠れてしまった場合・20pips固定のどちらかの条件に当てはまった場合に損切りを行う)
-          OrderCheckFlag = OrderCheck(Ticket, EntryOrderFlag);
-          if (OrderCheckFlag == 0){
-            OrderFuncrion(Currency, EntryOrderFlag);
+        //下降エントリーフラグ
+        else if (EntryOrderFlag == 2)
+        {
+          Print("DownEntryFlag:" + EntryOrderFlag); //いずれ消す
+          //注文処理(チケット発行)
+          Ticket = OrderFuncrion(Currency, EntryOrderFlag);
+          if (Ticket != -1)
+          {
+            Print("チケット番号:" + Ticket + " DownEntryFlag:" + EntryOrderFlag); //いずれ消す
+            //決済処理(雲の中に隠れてしまった場合・20pips固定のどちらかの条件に当てはまった場合に損切りを行う)
+            OrderCheckFlag = OrderCheck(Ticket, EntryOrderFlag);
+            if (OrderCheckFlag == 0)
+            {
+              OrderFuncrion(Currency, EntryOrderFlag);
+            }
+          }
+          else if (Ticket == -1)
+          {
+            Print("チケット番号:" + Ticket + " DownEntryFailed:" + EntryOrderFlag); //いずれ消す
+          }
+          else
+          {
+            Print("NoEntry:" + EntryOrderFlag); //いずれ消す
+          }
+          //通貨の個数とループ回数がマッチしたらループを終了する処理
+          if (LoopCount == ArraySize(ArraySymbol))
+          {
+            break;
           }
         }
-        else if (Ticket == -1){
-          Print("チケット番号:" + Ticket + " DownEntryFailed:" + EntryOrderFlag); //いずれ消す
-        }
-        else{
-          Print("NoEntry:" + EntryOrderFlag); //いずれ消す
-        }
-        //通貨の個数とループ回数がマッチしたらループを終了する処理
-        if (LoopCount == ArraySize(ArraySymbol)){
-          break;
-        }
+        Print("処理終了"); //いずれ消す
       }
-      Print("処理終了"); //いずれ消す
+    }
+    else
+    {
+      Comment(
+          "\n",
+          "ノーエントリー");
+      // Print("時間が同じためエントリー不可"); //いずれ消す
     }
   }
-  else{
+  else
+  {
     Comment(
         "\n",
-        "ノーエントリー");
+        "オーダーが5以上のためエントリーなし");
     // Print("時間が同じためエントリー不可"); //いずれ消す
   }
 }
