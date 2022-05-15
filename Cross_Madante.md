@@ -1,4 +1,32 @@
 # 開発で調査したこと
+トレーリングストップ
+https://pcoroom.com/post-5258/
+https://codelabsjp.net/mt4-ea-trailingstop/
+https://www.youtube.com/watch?v=KOA6-tTHw2A
+https://get-daze.net/2018/10/12/mt4-trailingstop/
+
+損益取得関数Pips
+https://ameblo.jp/wonderfulfxlife/entry-12574391761.html
+指定のマジックナンバーの損益のPipsを取得
+http://testcord.blog.fc2.com/blog-entry-6.html
+
+マジックナンバーについて
+https://mql-programing.com/ordermagicnumber/
+OrderCloseについて
+https://mql-programing.com/orderclose/
+OrderTicketについて
+https://mql-programing.com/orderticket/
+OrderLotsについて
+https://mql-programing.com/orderlots/
+
+OrderSelect関数の使用方法
+https://jidoubaibai.com/kouza/tyukyu/orderselect/
+
+損益の取得方法
+https://jidoubaibai.com/kouza/tyukyu/sonekisyutoku/
+
+OrderProfitについて
+https://yukifx.web.fc2.com/sub/reference/16_trade_func/cone/trade_profit.html
 
 mql4
 https://yryr.me/money/about-mql4.html
@@ -8,6 +36,7 @@ https://sherry-toushi.com/mt4-programming-guide/
 https://maths-in-industry.org/2021/10/01/mql4/
 https://kacchanblog.com/fx/ea-moving-average-mq4
 https://www.tradeatoz.biz/mt4-the-story-of-an-attempt-to-create-an-order-tool-0-prepared-mql4/
+https://fx-tradesite.com/mql4-study-5684
 
 
 カラー
