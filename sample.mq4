@@ -647,7 +647,7 @@ void OnTick()
   Comment(modifySymbol(ArraySymbol[0]) + "¥n" + modifySymbol(ArraySymbol[1]) + "¥n" + modifySymbol(ArraySymbol[2]) + "¥n" + modifySymbol(ArraySymbol[3]) + "¥n" + modifySymbol(ArraySymbol[4]));
 
   //オーダーが0から5つのポジションの時に実行をする
-  if (OrdersTotal() <= 0 && OrdersTotal() <= 5)
+  if (OrdersTotal() <= 5)
   {
     Print("現在のポジション数" + OrdersTotal());
     //新しいローソク足ができていることを確認してから処理を開始
