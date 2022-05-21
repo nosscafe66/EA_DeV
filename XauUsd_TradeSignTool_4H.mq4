@@ -259,9 +259,10 @@ void OnTick()
       // Print(ArraySymbol[LoopCount]);
       //エントリー条件判定処理
       Currency = modifySymbol(ArraySymbol[LoopCount]);
-      if (Currency == ArraySymbol[LoopCount])
+      if (Currency == "GOLD")
       {
         Sign_Tool_Xauusd_4H(Currency);
+        Print("エントリー通貨ペア" + Currency);
       }
     }
   }
