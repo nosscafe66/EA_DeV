@@ -285,7 +285,7 @@ int OrderFuncrion(string Currency, int EntryOrderFlag)
     volume = 0.1; //関数化しておく
     price = Ask;
     slippage = 30;
-    stoploss = 20;
+    stoploss = 2;
     takeprofit = 0;
     comment = "";
     magic = MAGICMA;
@@ -303,7 +303,7 @@ int OrderFuncrion(string Currency, int EntryOrderFlag)
     volume = 0.1; //関数化しておく
     price = Bid;
     slippage = 30;
-    stoploss = 20;
+    stoploss = 2;
     takeprofit = 0;
     comment = "";
     magic = MAGICMA;
@@ -558,7 +558,7 @@ int TrendJudgeCirculation()
 
 // トレーリングストップのトレール幅
 //買いポジションの場合、価格が上昇したら、その上昇した価格の20ポイント下にロスカットラインを引き上げる設定
-double TrailingStop = 20;
+double TrailingStop = 2;
 
 int TraillingStopFunction(int CandleStickFlag, string Currency)
 {
@@ -623,6 +623,26 @@ int TraillingStopFunction(int CandleStickFlag, string Currency)
 int LossCutFlag;
 int LossCutFunction()
 {
+  //５日移動平均線の値を取得
+  double LossCutFlagMa5 = iMA(Currency, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 1);
+
+  //ローソク足の値取得
+  double LossCut_Candle_high = iHigh(Currency, PERIOD_M5, 1);
+  double LossCut_Candle_low = iLow(Currency, PERIOD_M5, 1);
+  double LossCut_Candle_start = iOpen(Currency, PERIOD_M5, 1);
+  double LossCut_Candle_end = iClose(Currency, PERIOD_M5, 1);
+
+  //陰線の判定処理
+  double Hidden_line = get_Candle_start - get_Candle_end;
+
+  //損切り判定処理(5smaを陰線で完全に下抜けした場合)
+  //陰線判定
+  if (Hidden_line > 0){
+    if (LossCut_Candle_low < LossCut_Candle_end && LossCut_Candle_end < LossCut_Candle_start && LossCut_Candle_start < LossCut_Candle_high && LossCut_Candle_high < LossCutFlagMa5)
+    {
+
+    }
+  }
 }
 
 // LINE配信機能
@@ -684,7 +704,7 @@ void OnTick()
           Print("UpEntryFlag:" + EntryOrderFlag); //いずれ消す
           //注文処理(チケット発行)
           Ticket = OrderFuncrion(Currency, EntryOrderFlag);
-          TraillingStopFunction(EntryOrderFlag, Currency);
+          //TraillingStopFunction(EntryOrderFlag, Currency);
           if (Ticket != -1)
           {
             Print("チケット番号:" + Ticket + " UpEntryFlag:" + EntryOrderFlag); //いずれ消す
@@ -745,11 +765,14 @@ void OnTick()
   //ポジション保有中の時の処理
   else if (OrdersTotal() >= 1)
   {
-    int EntryOrderTrailFlag = EntryOrderFlag;
+    int EntryOrderTrailFlag;
     for (LoopCount = 0; LoopCount < ArraySize(ArraySymbol); LoopCount++)
     {
       Currency = modifySymbol(ArraySymbol[LoopCount]);
+      EntryOrderTrailFlag = CrossMadantePerfectOrder(Currency);
       Print("トレーリングストップを設定するポジション数です。" + OrdersTotal());
+      Print("通貨ペアは" + Currency);
+      Print("エントリーフラグ" + EntryOrderTrailFlag);
       TraillingStopFunction(EntryOrderTrailFlag, Currency);
     }
   }
