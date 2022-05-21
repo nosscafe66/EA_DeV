@@ -408,9 +408,7 @@ int CloseCheckFunction()
 {
 }
 
-//移動平均線&一目均衡表のフラグ
 int EntryOrderFlag;
-
 //クロスマダンテエントリー条件関数(パーフェクトオーダー判定処理)
 int CrossMadantePerfectOrder(string Currency)
 {
@@ -649,6 +647,9 @@ void OnTick()
   //通貨ペアの指定
   string ArraySymbol[5] = {"USDJPY", "EURUSD", "GBPUSD", "GBPJPY", "AUDJPY"}; //希望としてはトレンドの発生しやすい通貨など、、手入力のパラメーターでもいい。
 
+  //移動平均線&一目均衡表のエントリーフラグ
+  int EntryOrderFlag;
+
   //通貨ペアのコメント表示
   Comment(modifySymbol(ArraySymbol[0]) + "¥n" + modifySymbol(ArraySymbol[1]) + "¥n" + modifySymbol(ArraySymbol[2]) + "¥n" + modifySymbol(ArraySymbol[3]) + "¥n" + modifySymbol(ArraySymbol[4]));
 
@@ -741,11 +742,16 @@ void OnTick()
       // Print("時間が同じためエントリー不可"); //いずれ消す
     }
   }
-  //ポジションがマックスに保有数に達しているときの処理
+  //ポジション保有中の時の処理
   else if (OrdersTotal() >= 1)
   {
-    Print("トレーリングストップを設定するポジション数です。" + OrdersTotal());
-    TraillingStopFunction(EntryOrderFlag, Currency);
+    int EntryOrderTrailFlag = EntryOrderFlag;
+    for (LoopCount = 0; LoopCount < ArraySize(ArraySymbol); LoopCount++)
+    {
+      Currency = modifySymbol(ArraySymbol[LoopCount]);
+      Print("トレーリングストップを設定するポジション数です。" + OrdersTotal());
+      TraillingStopFunction(EntryOrderTrailFlag, Currency);
+    }
   }
   else
   {
