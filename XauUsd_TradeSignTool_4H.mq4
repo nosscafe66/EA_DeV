@@ -6,7 +6,7 @@
 #property strict
 
 //グローバル変数宣言
-//xauusdのグローバル変数を宣言
+// xauusdのグローバル変数を宣言
 string Currency = "";
 int MaxOrder = 1;
 
@@ -20,40 +20,36 @@ string modifySymbol(string symbol)
     includedCharacter = StringSubstr(Symbol(), 6, length - 6);
     Print("通貨ペアは" + symbol + "サフィックスは" + includedCharacter + "です。"); //いずれ消す
     return (symbol + includedCharacter);
-  }else if(length)
+  }
   return (symbol);
 }
-
-
-
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
-  {
-//--- create timer
-   EventSetTimer(60);
-   
-//---
-   return(INIT_SUCCEEDED);
-  }
+{
+  //--- create timer
+  EventSetTimer(60);
+
+  //---
+  return (INIT_SUCCEEDED);
+}
 //+------------------------------------------------------------------+
 //| Expert deinitialization function                                 |
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
-  {
-//--- destroy timer
-   EventKillTimer();
-   
-  }
+{
+  //--- destroy timer
+  EventKillTimer();
+}
 
 int EntrySignFlag = 0;
-int Sign_Tool_Xauusd_4H(string Currency){
+int Sign_Tool_Xauusd_4H(string Currency)
+{
 
   //ボリンジャーバンドの値を取得する変数宣言
   double Hensa = 1;
-  double MaTerm = 20;
 
   //ローソク足の値を取得する変数宣言
   double get_Candle_high;
@@ -79,8 +75,8 @@ int Sign_Tool_Xauusd_4H(string Currency){
   //陰線判定処理
   double Hidden_line;
 
-  //1つ前のボリンジャーバンドのミドルラインの値を取得する
-  BoilngerMidleLine = iBands(Currency, , BoilngerMidle, Hensa, 0, PRICE_CLOSE, MODE_MAIN, 1);
+  // 1つ前のボリンジャーバンドのミドルラインの値を取得する
+  BoilngerMidleLine = iBands(Currency, 0, BoilngerMidle, Hensa, 0, PRICE_CLOSE, MODE_MAIN, 1);
   // 1本前の4時間のローソク足の値を取得する。
   get_Candle_high = iHigh(Currency, PERIOD_H4, 1);
   get_Candle_low = iLow(Currency, PERIOD_H4, 1);
@@ -89,13 +85,13 @@ int Sign_Tool_Xauusd_4H(string Currency){
 
   //ローソク足の陽線と陰線を判定する処理
   Positive_line = get_Candle_end - get_Candle_start;
-  Hidden_line = get_Candle_start - get_Candle_end
+  Hidden_line = get_Candle_start - get_Candle_end;
 
   //エントリー条件の判定処理
-
   //ロングの条件
   //陽線の判定処理
-  if(Positive_line > 0){
+  if (Positive_line > 0)
+  {
     //陽線がBBミドルラインを実体で上に超える
     //①ローソク足が完全に超えた場合
     if (get_Candle_high > get_Candle_end && get_Candle_start > get_Candle_low && get_Candle_low > BoilngerMidleLine)
@@ -108,18 +104,18 @@ int Sign_Tool_Xauusd_4H(string Currency){
       EntrySignFlag = 1;
     }
     //それ以外の場合エントリーなし
-    else{
+    else
+    {
       EntrySignFlag = 0;
     }
   }
-
-
   //ショートの条件
   //陰線の判定処理
-  if (Hidden_line > 0){
+  if (Hidden_line > 0)
+  {
     //陰線がBBミドルラインを実体で下に超える
     //①ローソク足が完全に超えた場合
-    if (get_Candle_low < get_Candle_end && get_Candle_start < get_Candle_High && get_Candle_high > BoilngerMidleLine)
+    if (get_Candle_low < get_Candle_end && get_Candle_start < get_Candle_high && get_Candle_high > BoilngerMidleLine)
     {
       EntrySignFlag = 2;
     }
@@ -129,43 +125,44 @@ int Sign_Tool_Xauusd_4H(string Currency){
       EntrySignFlag = 2;
     }
     //それ以外の場合エントリーなし
-    else{
+    else
+    {
       EntrySignFlag = 0;
     }
   }
+  return (EntrySignFlag);
 }
-
-
 
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
 void OnTick()
+{
+  //---
+  //現在のポジション数が1以下の時に処理を行う
+  if (OrdersTotal() <= 1)
   {
-//---
-//現在のポジション数が1以下の時に処理を行う
-    if (OrdersTotal() <= 1){
-      //現在のポジション数を把握する
-      Print("現在のポジション数" + OrdersTotal());
-
-      //ゴールドのペアを指定する。
-      string ArraySymbol[3] = {"XAUUSD", "xauusd", "GOLD", "gold"};
-
-      //ゴールドの通貨ペアの表記が業者により異なるためマッチした通貨でのエントリーを行う処理
-      for (int LoopCount = 0; LoopCount < ArraySize(ArraySymbol); LoopCount++){
-        //ゴールド4時間足のエントリー条件確認処理
-        Print(ArraySymbol[i]);
-      }
+    //現在のポジション数を把握する
+    Print("現在のポジション数" + OrdersTotal());
+    //ゴールドのペアを指定する。
+    string ArraySymbol[3] = {"XAUUSD", "xauusd", "GOLD", "gold"};
+    //ゴールドの通貨ペアの表記が業者により異なるためマッチした通貨でのエントリーを行う処理
+    for (int LoopCount = 0; LoopCount < ArraySize(ArraySymbol); LoopCount++)
+    {
+      //ゴールド4時間足のエントリー条件確認処理
+      Print(ArraySymbol[LoopCount]);
+      //エントリー条件判定処理
+      Sign_Tool_Xauusd_4H(Currency);
     }
   }
+}
 //+------------------------------------------------------------------+
 //| Timer function                                                   |
 //+------------------------------------------------------------------+
 
-//4時間ごとに処理を行う(正確には3時間30分が経過したあたりから確認を行う。)
+// 4時間ごとに処理を行う(正確には3時間30分が経過したあたりから確認を行う。)
 void OnTimer()
-  {
-//---
-   
-  }
+{
+  //---
+}
 //+------------------------------------------------------------------+
