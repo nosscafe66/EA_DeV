@@ -128,7 +128,6 @@ int NewCandleStickCheck()
 int EntrySignFlag = 0;
 int Sign_Tool_Xauusd_4H(string Currency)
 {
-
   //ボリンジャーバンドの値を取得する変数宣言
   double Hensa = 2;
 
@@ -203,7 +202,6 @@ int Sign_Tool_Xauusd_4H(string Currency)
     }
     //ショートの条件
     //陰線の判定処理
-    return (EntrySignFlag);
   }
   else if (Hidden_line > 0)
   {
@@ -235,8 +233,8 @@ int Sign_Tool_Xauusd_4H(string Currency)
           "\n",
           "オーダーなし");
     }
-    return (EntrySignFlag);
   }
+  return (EntrySignFlag);
 }
 
 //+------------------------------------------------------------------+
@@ -267,8 +265,8 @@ void OnTick()
 //+------------------------------------------------------------------+
 
 // 4時間ごとに処理を行う(正確には3時間30分が経過したあたりから確認を行う。)
-void OnTimer()
-{
-  //---
-}
+// void OnTimer()
+// {
+//---
+// }
 //+------------------------------------------------------------------+
