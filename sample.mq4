@@ -571,7 +571,7 @@ int TraillingStopFunction(int CandleStickFlag, string Currency)
 
   //未決済ポジションの判定処理を行う(取引中のポジション全てに対して確認する)
   for (int OrderIndex = 0; OrderIndex < OrdersTotal(); OrderIndex++)
-{
+  {
     if (OrderSelect(OrderIndex, SELECT_BY_POS, MODE_TRADES) == false)
     {
       if (OrderMagicNumber() != MAGICMA || OrderSymbol() != Currency)
