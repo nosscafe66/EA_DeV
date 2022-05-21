@@ -76,7 +76,7 @@ int OnInit()
 {
   //--- create timer
   setupChart();
-  EventSetTimer(14400);
+  //EventSetTimer(14400);
 
   //---
   return (INIT_SUCCEEDED);
@@ -141,6 +141,8 @@ int Sign_Tool_Xauusd_4H(string Currency)
   //ボリンジャーバンドミドルの値を取得する。
   double BoilngerMidleLine;
   double BoilngerMidle = 20;
+  double BB2UP;
+  double BB2LO;
 
   //実体の大きさと髭の大きさ
   double Candle_Entity;
@@ -158,7 +160,9 @@ int Sign_Tool_Xauusd_4H(string Currency)
   double Hidden_line;
 
   // 1つ前のボリンジャーバンドのミドルラインの値を取得する
-  BoilngerMidleLine = iBands(Currency, 0, BoilngerMidle, Hensa, 0, PRICE_CLOSE, MODE_MAIN, 1);
+  BoilngerMidleLine = iBands(Currency, 1, BoilngerMidle, Hensa, 0, PRICE_CLOSE, MODE_MAIN, 1);
+  BB2UP = iBands(Currency, 0, BoilngerMidle, 2, 0, PRICE_CLOSE, MODE_UPPER, 1);
+  BB2LO = iBands(Currency, 0, BoilngerMidle, 2, 0, PRICE_CLOSE, MODE_LOWER, 1);
   // 1本前の4時間のローソク足の値を取得する。
   get_Candle_high = iHigh(Currency, PERIOD_H4, 1);
   get_Candle_low = iLow(Currency, PERIOD_H4, 1);
