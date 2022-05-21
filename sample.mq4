@@ -562,7 +562,7 @@ int TrendJudgeCirculation()
 //買いポジションの場合、価格が上昇したら、その上昇した価格の20ポイント下にロスカットラインを引き上げる設定
 double TrailingStop = 20;
 
-int TraillingStopFunction(int CandleStickFlag, string Currency, int Ticket)
+int TraillingStopFunction(int CandleStickFlag, string Currency)
 {
   int modified;
   double Max_Stop_Loss_Buy;
@@ -571,7 +571,7 @@ int TraillingStopFunction(int CandleStickFlag, string Currency, int Ticket)
 
   //未決済ポジションの判定処理を行う(取引中のポジション全てに対して確認する)
   for (int OrderIndex = 0; OrderIndex < OrdersTotal(); OrderIndex++)
-  {
+{
     if (OrderSelect(OrderIndex, SELECT_BY_POS, MODE_TRADES) == false)
     {
       if (OrderMagicNumber() != MAGICMA || OrderSymbol() != Currency)
@@ -621,6 +621,12 @@ int TraillingStopFunction(int CandleStickFlag, string Currency, int Ticket)
   }
 }
 
+//損切り設定関数
+int LossCutFlag;
+int LossCutFunction()
+{
+}
+
 // LINE配信機能
 void LineNotify(string Token, string Message)
 {
@@ -646,7 +652,7 @@ void OnTick()
   //通貨ペアのコメント表示
   Comment(modifySymbol(ArraySymbol[0]) + "¥n" + modifySymbol(ArraySymbol[1]) + "¥n" + modifySymbol(ArraySymbol[2]) + "¥n" + modifySymbol(ArraySymbol[3]) + "¥n" + modifySymbol(ArraySymbol[4]));
 
-  //オーダーが0から5つのポジションの時に実行をする
+  //オーダーが0から5つ以下のポジションの時に実行をする
   if (OrdersTotal() <= 5)
   {
     Print("現在のポジション数" + OrdersTotal());
@@ -677,7 +683,7 @@ void OnTick()
           Print("UpEntryFlag:" + EntryOrderFlag); //いずれ消す
           //注文処理(チケット発行)
           Ticket = OrderFuncrion(Currency, EntryOrderFlag);
-          TraillingStopFunction(EntryOrderFlag, Currency, Ticket);
+          TraillingStopFunction(EntryOrderFlag, Currency);
           if (Ticket != -1)
           {
             Print("チケット番号:" + Ticket + " UpEntryFlag:" + EntryOrderFlag); //いずれ消す
@@ -699,7 +705,7 @@ void OnTick()
           Print("DownEntryFlag:" + EntryOrderFlag); //いずれ消す
           //注文処理(チケット発行)
           Ticket = OrderFuncrion(Currency, EntryOrderFlag);
-          TraillingStopFunction(EntryOrderFlag, Currency, Ticket);
+          TraillingStopFunction(EntryOrderFlag, Currency);
           if (Ticket != -1)
           {
             Print("チケット番号:" + Ticket + " DownEntryFlag:" + EntryOrderFlag); //いずれ消す
@@ -734,6 +740,12 @@ void OnTick()
           "ノーエントリー");
       // Print("時間が同じためエントリー不可"); //いずれ消す
     }
+  }
+  //ポジションがマックスに保有数に達しているときの処理
+  else if (OrdersTotal() >= 1)
+  {
+    Print("トレーリングストップを設定するポジション数です。" + OrdersTotal());
+    TraillingStopFunction(EntryOrderFlag, Currency);
   }
   else
   {
