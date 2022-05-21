@@ -10,6 +10,51 @@
 string Currency = "";
 int MaxOrder = 1;
 
+// LINEアカウントへの通知設定
+input string Line_token = "";   // LINEのアクセストークン
+input string Send_Message = ""; // LINEに送りたいメッセージ
+
+//連続でエントリーしないために
+datetime time = Time[0];
+
+//新しいローソク足の生成チェックフラグ
+int NewCandleStickFlag;
+int NewBar = 0;
+
+void setupChart(long chartId = 0)
+{
+  // ローソク足で表示
+  ChartSetInteger(chartId, CHART_MODE, CHART_CANDLES);
+
+  // 買値 (Ask) ラインを表示
+  ChartSetInteger(chartId, CHART_SHOW_ASK_LINE, true);
+  ChartSetInteger(chartId, CHART_COLOR_BID, clrDodgerBlue);
+
+  // 売値 (Bid) ラインを表示
+  ChartSetInteger(chartId, CHART_SHOW_BID_LINE, true);
+  ChartSetInteger(chartId, CHART_COLOR_ASK, clrOrangeRed);
+
+  // 背景のグリッド線の設定表示
+  ChartSetInteger(chartId, CHART_COLOR_GRID, clrNONE);
+
+  // 背景のカラー設定表示
+  ChartSetInteger(chartId, CHART_COLOR_BACKGROUND, clrBlack);
+
+  // ローソク足の設定表示
+  ChartSetInteger(chartId, CHART_COLOR_CHART_UP, clrBlue);
+  ChartSetInteger(chartId, CHART_COLOR_CHART_DOWN, clrRed);
+  ChartSetInteger(chartId, CHART_COLOR_CANDLE_BULL, clrBlue);
+  ChartSetInteger(chartId, CHART_COLOR_CANDLE_BEAR, clrRed);
+
+  // ChartSetInteger(chartId, , );
+  // ChartSetInteger(chartId, , );
+  // ChartSetInteger(chartId, , );
+  // ChartSetInteger(chartId, , );
+  // ChartSetInteger(chartId, , );
+
+  ChartRedraw(chartId);
+}
+
 //通貨ペア取得関数
 string modifySymbol(string symbol)
 {
@@ -24,32 +69,68 @@ string modifySymbol(string symbol)
   return (symbol);
 }
 
-//+------------------------------------------------------------------+
-//| Expert initialization function                                   |
-//+------------------------------------------------------------------+
+//初期化処理
 int OnInit()
 {
   //--- create timer
-  EventSetTimer(60);
+  setupChart();
+  EventSetTimer(14400);
 
   //---
   return (INIT_SUCCEEDED);
 }
+
+//新しいローソク足の生成チェック関数(凍結対策)
+int NewCandleStickCheck()
+{
+  //連続でエントリーしないようにする
+  // time変数が、現在の時間ではない場合に実行する
+  if (time != Time[0])
+  {
+    // time変数に、現在の時間を代入
+    time = Time[0];
+
+    //エントリーロジックを実行するためのフラグ
+    int iCurrentBars = Bars;
+    if (iCurrentBars == NewBar)
+    {
+      NewBar = iCurrentBars;
+      NewCandleStickFlag = 0;
+      return (NewCandleStickFlag);
+    }
+    else
+    {
+      //バーの始まりで1回だけ処理したい内容をここに記載する
+      //////エントリーロジック関数などを入れる
+      //ここにロジックやエントリー注文を書く
+      //エントリーサンプル（実行しないでください！！）
+      // int buy = OrderSend(Symbol(), OP_BUY, LOT, Ask, 30, Ask-STOPLOSS_WIDTH, Ask+TAKEPROFIT_WIDTH, "自動売買を作ろう！", 9999, clrNONE);
+      NewCandleStickFlag = 1;
+      //今のバー数を記録
+      NewBar = iCurrentBars;
+    }
+  }
+  else
+  {
+    NewCandleStickFlag = 0;
+  }
+  return (NewCandleStickFlag);
+}
 //+------------------------------------------------------------------+
 //| Expert deinitialization function                                 |
 //+------------------------------------------------------------------+
-void OnDeinit(const int reason)
-{
-  //--- destroy timer
-  EventKillTimer();
-}
+// void OnDeinit(const int reason)
+//{
+//  //--- destroy timer
+//  EventKillTimer();
+//}
 
 int EntrySignFlag = 0;
 int Sign_Tool_Xauusd_4H(string Currency)
 {
 
   //ボリンジャーバンドの値を取得する変数宣言
-  double Hensa = 1;
+  double Hensa = 2;
 
   //ローソク足の値を取得する変数宣言
   double get_Candle_high;
@@ -97,40 +178,65 @@ int Sign_Tool_Xauusd_4H(string Currency)
     if (get_Candle_high > get_Candle_end && get_Candle_start > get_Candle_low && get_Candle_low > BoilngerMidleLine)
     {
       EntrySignFlag = 1;
+      Print("上昇エントリーフラグ①" + EntrySignFlag);
+      Comment(
+          "\n",
+          "上昇エントリーあり①");
     }
     //②高値と終値が超えた場合
     else if (get_Candle_high > get_Candle_end && get_Candle_end > BoilngerMidleLine)
     {
       EntrySignFlag = 1;
+      Print("上昇エントリーフラグ②" + EntrySignFlag);
+      Comment(
+          "\n",
+          "上昇エントリーあり②");
     }
     //それ以外の場合エントリーなし
     else
     {
       EntrySignFlag = 0;
+      Print("上昇エントリーなし" + EntrySignFlag);
+      Comment(
+          "\n",
+          "上昇エントリーなし");
     }
+    //ショートの条件
+    //陰線の判定処理
+    return (EntrySignFlag);
   }
-  //ショートの条件
-  //陰線の判定処理
-  if (Hidden_line > 0)
+  else if (Hidden_line > 0)
   {
     //陰線がBBミドルラインを実体で下に超える
     //①ローソク足が完全に超えた場合
     if (get_Candle_low < get_Candle_end && get_Candle_start < get_Candle_high && get_Candle_high > BoilngerMidleLine)
     {
       EntrySignFlag = 2;
+      Print("下落エントリーフラグ①" + EntrySignFlag);
+      Comment(
+          "\n",
+          "下落エントリーあり①");
     }
     //②安値と終値が超えた場合
     else if (get_Candle_low < get_Candle_end && get_Candle_end < BoilngerMidleLine)
     {
       EntrySignFlag = 2;
+      Print("下落エントリーフラグ②" + EntrySignFlag);
+      Comment(
+          "\n",
+          "下落エントリーあり②");
     }
     //それ以外の場合エントリーなし
     else
     {
       EntrySignFlag = 0;
+      Print("下落エントリーなし" + EntrySignFlag);
+      Comment(
+          "\n",
+          "オーダーなし");
     }
+    return (EntrySignFlag);
   }
-  return (EntrySignFlag);
 }
 
 //+------------------------------------------------------------------+
