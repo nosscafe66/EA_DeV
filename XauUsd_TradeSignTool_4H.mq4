@@ -3,6 +3,8 @@
 //|                        Copyright 2021, MetaQuotes Software Corp. |
 //|                                             https://www.mql5.com |
 //+------------------------------------------------------------------+
+#property copyright "2005-2014, MetaQuotes Software Corp."
+#property link "http://www.mql4.com"
 #property strict
 
 //グローバル変数宣言
@@ -254,19 +256,26 @@ void OnTick()
     for (int LoopCount = 0; LoopCount < ArraySize(ArraySymbol); LoopCount++)
     {
       //ゴールド4時間足のエントリー条件確認処理
-      Print(ArraySymbol[LoopCount]);
+      // Print(ArraySymbol[LoopCount]);
       //エントリー条件判定処理
-      Sign_Tool_Xauusd_4H(Currency);
+      Currency = modifySymbol(ArraySymbol[LoopCount]);
+      if (Currency == ArraySymbol[LoopCount])
+      {
+        Sign_Tool_Xauusd_4H(Currency);
+      }
     }
   }
 }
+
+//決済処理について
+//損益0以上もしくは
 //+------------------------------------------------------------------+
 //| Timer function                                                   |
 //+------------------------------------------------------------------+
 
 // 4時間ごとに処理を行う(正確には3時間30分が経過したあたりから確認を行う。)
-// void OnTimer()
-// {
-//---
-// }
+void OnTimer()
+{
+  //---
+}
 //+------------------------------------------------------------------+
