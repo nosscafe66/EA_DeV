@@ -6,6 +6,7 @@
 #property copyright "2005-2014, MetaQuotes Software Corp."
 #property link "http://www.mql4.com"
 #property strict
+#define MAGICMA 20220000
 
 //グローバル変数宣言
 // xauusdのグローバル変数を宣言
@@ -15,6 +16,35 @@ int MaxOrder = 1;
 // LINEアカウントへの通知設定
 input string Line_token = "";   // LINEのアクセストークン
 input string Send_Message = ""; // LINEに送りたいメッセージ
+
+//ボリンジャーバンドの値を取得する変数宣言
+double Hensa = 2;
+
+//ローソク足の値を取得する変数宣言
+double get_Candle_high;
+double get_Candle_low;
+double get_Candle_start;
+double get_Candle_end;
+//ボリンジャーバンドミドルの値を取得する。
+double BoilngerMidleLine;
+double BoilngerMidle = 20;
+double BB2UP;
+double BB2LO;
+
+//実体の大きさと髭の大きさ
+double Candle_Entity;
+double Candle_Beard_Up;
+double Candle_Beard_Down;
+double Total_Candle;
+
+//実体と髭比率変数
+double Compare_Candle;
+
+//陽線判定処理
+double Positive_line;
+
+//陰線判定処理
+double Hidden_line;
 
 //連続でエントリーしないために
 datetime time = Time[0];
@@ -76,7 +106,7 @@ int OnInit()
 {
   //--- create timer
   setupChart();
-  //EventSetTimer(14400);
+  // EventSetTimer(14400);
 
   //---
   return (INIT_SUCCEEDED);
@@ -130,34 +160,6 @@ int NewCandleStickCheck()
 int EntrySignFlag = 0;
 int Sign_Tool_Xauusd_4H(string Currency)
 {
-  //ボリンジャーバンドの値を取得する変数宣言
-  double Hensa = 2;
-
-  //ローソク足の値を取得する変数宣言
-  double get_Candle_high;
-  double get_Candle_low;
-  double get_Candle_start;
-  double get_Candle_end;
-  //ボリンジャーバンドミドルの値を取得する。
-  double BoilngerMidleLine;
-  double BoilngerMidle = 20;
-  double BB2UP;
-  double BB2LO;
-
-  //実体の大きさと髭の大きさ
-  double Candle_Entity;
-  double Candle_Beard_Up;
-  double Candle_Beard_Down;
-  double Total_Candle;
-
-  //実体と髭比率変数
-  double Compare_Candle;
-
-  //陽線判定処理
-  double Positive_line;
-
-  //陰線判定処理
-  double Hidden_line;
 
   // 1つ前のボリンジャーバンドのミドルラインの値を取得する
   BoilngerMidleLine = iBands(Currency, 1, BoilngerMidle, Hensa, 0, PRICE_CLOSE, MODE_MAIN, 1);
@@ -279,8 +281,7 @@ void OnTick()
 //+------------------------------------------------------------------+
 
 // 4時間ごとに処理を行う(正確には3時間30分が経過したあたりから確認を行う。)
-void OnTimer()
-{
-  //---
-}
-//+------------------------------------------------------------------+
+// void OnTimer()
+//{
+//---
+//}//+------------------------------------------------------------------+
