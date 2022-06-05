@@ -1,0 +1,57 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © hozumihukuda1112
+
+//@version=5
+indicator("マイスクリプト")
+//plot(close)
+plot(ta.sma(close,100))
+float sma00 = ta.sma(close,100)
+plot(sma00, color = #FF6D00)
+indicator("if")
+if close[1] < sma00
+    plot()
+else if close[1] > sma00
+    plot(sma00)
+else
+    plot(sma00)
+
+//double MA00 = 0
+//double MA01 = 0
+//int up_flag = 0
+//int down_flag = 0
+
+//extern int ma_period = 20
+//extern bool alert_push = true
+
+// 初期化関数
+//int init()
+//{
+//   return(0)
+//}
+
+// 指標計算関数
+//int start()
+//{
+//plot( ema (close ,20) ,color=red ) 
+   //MA00 = iMA(NULL, 0, ma_period, 0, MODE_EMA, PRICE_CLOSE, 0)
+   //MA01 = iMA(NULL, 0, ma_period, 0, MODE_EMA, PRICE_CLOSE, 1)
+   
+   //if(MA01 > Close[1] && MA00 <= Close[0]){
+   //	if(alert_push == true && up_flag == 0){
+   //		Alert("MAタッチ（下から上）：アラート通知");
+   //		SendNotification("MAタッチ（下から上）：プッシュ通知")
+   //		up_flag = 1;
+   //	down_flag = 0;
+   //	}
+   //}
+   
+   //if(MA01 < Close[1] && MA00 >= Close[0]){
+   //	if(alert_push == true && down_flag == 0){
+   //		Alert("MAタッチ（上から下）：アラート通知")
+   //		SendNotification("MAタッチ（上から下）：プッシュ通知")
+   //		down_flag = 1
+   //		up_flag = 0
+   //	}
+   //}
+   //      return(0)
+//}
