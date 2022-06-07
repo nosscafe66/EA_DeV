@@ -3,8 +3,9 @@
 //|                        Copyright 2021, MetaQuotes Software Corp. |
 //|                                             https://www.mql5.com |
 //+------------------------------------------------------------------+
-#property copyright "2005-2014, MetaQuotes Software Corp."
-#property link "http://www.mql4.com"
+#property copyright "Copyright 2021, MetaQuotes Software Corp."
+#property link "https://www.mql5.com"
+#property version "1.00"
 #property strict
 #define MAGICMA 20220000
 
@@ -157,6 +158,72 @@ int NewCandleStickCheck()
 //  EventKillTimer();
 //}
 
+//注文処理フラグ
+int OrderFlag;
+
+//注文処理関数(チケットを発行する処理)
+int OrderFuncrion(string Currency, int EntryOrderFlag)
+{
+  //注文フィールド(OrderSend関数実行に必要なパラメータ設定)
+  string symbol;
+  int cmd;
+  double volume;
+  double price;
+  int slippage;
+  double stoploss;
+  double takeprofit;
+  string comment;
+  int magic;
+  datetime expiration;
+  color arrow_color;
+  int Ticket;
+
+  ///上昇エントリー設定処理
+  OrderFlag = EntryOrderFlag;
+  if (OrderFlag == 1)
+  {
+    //買い注文設定
+    symbol = Currency;
+    cmd = OP_BUY;
+    volume = 0.1; //関数化しておく
+    price = Ask;
+    slippage = 30;
+    stoploss = 2;
+    takeprofit = 0;
+    comment = "";
+    magic = MAGICMA;
+    expiration = 0;
+    arrow_color = clrBlue;
+    Ticket = OrderSend(symbol, cmd, volume, price, slippage, stoploss, takeprofit, "", magic, expiration, arrow_color);
+    OrderFlag = 1;
+  }
+  //下降エントリー設定処理
+  else if (OrderFlag == 2)
+  {
+    //売り注文設定
+    symbol = Currency;
+    cmd = OP_SELL;
+    volume = 0.1; //関数化しておく
+    price = Bid;
+    slippage = 30;
+    stoploss = 2;
+    takeprofit = 0;
+    comment = "";
+    magic = MAGICMA;
+    expiration = 0;
+    arrow_color = clrRed;
+    Ticket = OrderSend(symbol, cmd, volume, price, slippage, stoploss, takeprofit, "", magic, expiration, arrow_color);
+    OrderFlag = 2;
+  }
+  else
+  {
+    //注文しない
+    OrderFlag = 0;
+    // Print("NoEntry"); //いずれ消す
+  }
+  return (Ticket);
+}
+
 int EntrySignFlag = 0;
 int Sign_Tool_Xauusd_4H(string Currency)
 {
@@ -251,26 +318,45 @@ int Sign_Tool_Xauusd_4H(string Currency)
 void OnTick()
 {
   //---
+  //連続エントリー禁止関数
+  int NewCandleStickFlag = NewCandleStickCheck();
   //現在のポジション数が1以下の時に処理を行う
-  if (OrdersTotal() <= 1)
-  {
-    //現在のポジション数を把握する
-    Print("現在のポジション数" + OrdersTotal());
-    //ゴールドのペアを指定する。
-    string ArraySymbol[3] = {"XAUUSD", "xauusd", "GOLD", "gold"};
-    //ゴールドの通貨ペアの表記が業者により異なるためマッチした通貨でのエントリーを行う処理
-    for (int LoopCount = 0; LoopCount < ArraySize(ArraySymbol); LoopCount++)
+  if (NewCandleStickFlag == 1){
+    if (OrdersTotal() <= 1)
     {
-      //ゴールド4時間足のエントリー条件確認処理
-      // Print(ArraySymbol[LoopCount]);
-      //エントリー条件判定処理
-      Currency = modifySymbol(ArraySymbol[LoopCount]);
-      if (Currency == "GOLD")
+      //現在のポジション数を把握する
+      Print("現在のポジション数" + OrdersTotal());
+      //ゴールドのペアを指定する。
+      string ArraySymbol[3] = {"XAUUSD", "xauusd", "GOLD", "gold"};
+      //ゴールドの通貨ペアの表記が業者により異なるためマッチした通貨でのエントリーを行う処理
+      for (int LoopCount = 0; LoopCount < ArraySize(ArraySymbol); LoopCount++)
       {
-        Sign_Tool_Xauusd_4H(Currency);
-        Print("エントリー通貨ペア" + Currency);
+        //ゴールド4時間足のエントリー条件確認処理
+        // Print(ArraySymbol[LoopCount]);
+        //エントリー条件判定処理
+        Currency = modifySymbol(ArraySymbol[LoopCount]);
+        if (Currency == "GOLD")
+        {
+          EntrySignFlag = Sign_Tool_Xauusd_4H(Currency);
+          Print("エントリー通貨ペア" + Currency);
+          OrderFuncrion(Currency,EntrySignFlag);
+        }else if(Currency == "XAUUSD"){
+          EntrySignFlag = Sign_Tool_Xauusd_4H(Currency);
+          Print("エントリー通貨ペア" + Currency);
+          OrderFuncrion(Currency,EntrySignFlag);
+        }else if(Currency == "xauusd"){
+          EntrySignFlag = Sign_Tool_Xauusd_4H(Currency);
+          Print("エントリー通貨ペア" + Currency);
+          OrderFuncrion(Currency,EntrySignFlag);
+        }else{
+          EntrySignFlag = Sign_Tool_Xauusd_4H(Currency);
+          Print("エントリー通貨ペア" + Currency);
+          OrderFuncrion(Currency,EntrySignFlag);
+        }
       }
     }
+  }else{
+    Print("エントリーなし");
   }
 }
 
