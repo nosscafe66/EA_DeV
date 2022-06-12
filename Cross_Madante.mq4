@@ -11,8 +11,8 @@
 //#property indicator_chart_window
 //参考ソースコードhttps://investment-vmoney.com/archives/4889?amp=1
 #property indicator_color1 Yellow;  //D1 Low and High
-#property indicator_color2 clrPeru; //H4 Low and High
-#property indicator_color3 clrIndianRed; //H1 Low and High
+#property indicator_color2 clrBlue; //H4 Low and High
+#property indicator_color3 clrBlue; //H1 Low and High
 
 //======各種フラグの説明=======
 //基本的な上昇・下降の判定
@@ -473,9 +473,31 @@ double d1_high=iHigh(NULL, PERIOD_D1,0);
 double d1_low=iLow(NULL, PERIOD_D1,0);  
 
 int HorizonFlag;
-
+//前日・前週の高値・安値を確認する処理
 int HorizonCheckFunction(){
-  
+  //前日のローソク足の値取得
+  double pre_Candle_D_high = iHigh(Currency, PERIOD_D1, 1);
+  double pre_Candle_D_low = iLow(Currency, PERIOD_D1, 1);
+  double pre_Candle_D_start = iOpen(Currency, PERIOD_D1, 1);
+  double pre_Candle_D_end = iClose(Currency, PERIOD_D1, 1);
+
+  //前週のローソク足の値取得
+  double pre_Candle_W_high = iHigh(Currency, PERIOD_W1, 1);
+  double pre_Candle_W_low = iLow(Currency, PERIOD_W1, 1);
+  double pre_Candle_W_start = iOpen(Currency, PERIOD_W1, 1);
+  double pre_Candle_W_end = iClose(Currency, PERIOD_W1, 1);
+
+  //前日の日足の
+  if(){
+
+  }
+}
+
+int TrendLineFlag;
+
+//上位足のトレンドライン判定処理
+int TrendLineCheckFlag(){
+
 }
 
 
@@ -629,7 +651,7 @@ int TrendJudgeCirculation()
 
 // トレーリングストップのトレール幅
 //買いポジションの場合、価格が上昇したら、その上昇した価格の20ポイント下にロスカットラインを引き上げる設定
-double TrailingStop = 50;
+double TrailingStop = 500;
 
 int TraillingStopFunction(int CandleStickFlag, string Currency)
 {
@@ -651,7 +673,7 @@ int TraillingStopFunction(int CandleStickFlag, string Currency)
         OrderCheckBuyFlag = 1;
         //買い値からトレール幅の設定
         //Max_Stop_Loss_Buy = Bid - TrailingStop * Pips;
-        Max_Stop_Loss_Buy = 50;
+        Max_Stop_Loss_Buy = 200;
       }
       //売りの未決済ポジション判定処理
       if (OrderType() == OP_SELL)
@@ -660,7 +682,7 @@ int TraillingStopFunction(int CandleStickFlag, string Currency)
         OrderCheckSellFlag = 2;
         //売り値からトレール幅の設定
         //Max_Stop_Loss_Sell = Ask + TrailingStop * Pips;
-        Max_Stop_Loss_Sell = 50;
+        Max_Stop_Loss_Sell = 200;
       }
     }
 
@@ -812,6 +834,9 @@ void OnTick()
           //注文処理(チケット発行)
           Ticket = OrderFuncrion(Currency, EntryOrderFlag);
           TraillingStopFunction(EntryOrderFlag, Currency);
+          //トレーリングストップを設定してもなお未決済のポジションがある場合は損切りを失効する処理
+          //OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
+
           if (Ticket != -1)
           {
             // Print("チケット番号:" + Ticket + " UpEntryFlag:" + EntryOrderFlag); //いずれ消す
@@ -834,8 +859,10 @@ void OnTick()
           // Print("通貨ペアは" + Currency);
           // Print("エントリーフラグ" + EntryOrderFlag);
           // Print("================================決済処理================================");
-          //OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
+          //トレーリングストップ処理
           TraillingStopFunction(EntryOrderFlag, Currency);
+          //トレーリングストップを設定してもなお未決済のポジションがある場合は損切りを失効する処理
+          //OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
         }
         else
         {
@@ -856,6 +883,8 @@ void OnTick()
           //注文処理(チケット発行)
           Ticket = OrderFuncrion(Currency, EntryOrderFlag);
           TraillingStopFunction(EntryOrderFlag, Currency);
+          //トレーリングストップを設定してもなお未決済のポジションがある場合は損切りを失効する処理
+          //OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
           if (Ticket != -1)
           {
             // Print("チケット番号:" + Ticket + " DownEntryFlag:" + EntryOrderFlag); //いずれ消す
@@ -879,8 +908,10 @@ void OnTick()
           // Print("通貨ペアは" + Currency);
           // Print("エントリーフラグ" + EntryOrderFlag);
           // Print("================================決済処理================================");
-          //OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
+          //トレーリングストップ処理
           TraillingStopFunction(EntryOrderFlag, Currency);
+          //トレーリングストップを設定してもなお未決済のポジションがある場合は損切りを失効する処理
+          //OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
         }
         else
         {
