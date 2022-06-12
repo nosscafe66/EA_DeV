@@ -50,6 +50,9 @@ double Hidden_line;
 //連続でエントリーしないために
 datetime time = Time[0];
 
+//メッセージ変数宣言
+string Message;
+
 //新しいローソク足の生成チェックフラグ
 int NewCandleStickFlag;
 int NewBar = 0;
@@ -108,6 +111,7 @@ int OnInit()
   //--- create timer
   setupChart();
   // EventSetTimer(14400);
+  LineNotify(Line_token, Send_Message); // LineNotifyを呼び出し
 
   //---
   return (INIT_SUCCEEDED);
@@ -253,6 +257,8 @@ int Sign_Tool_Xauusd_4H(string Currency)
     {
       EntrySignFlag = 1;
       Print("上昇エントリーフラグ①" + EntrySignFlag);
+      Message = "Currency： " + Currency + ", OrderType： BUY";
+      LineNotify(Line_token, Message);
       Comment(
           "\n",
           "上昇エントリーあり①");
@@ -262,6 +268,8 @@ int Sign_Tool_Xauusd_4H(string Currency)
     {
       EntrySignFlag = 1;
       Print("上昇エントリーフラグ②" + EntrySignFlag);
+      Message = "Currency： " + Currency + ", OrderType： BUY";
+      LineNotify(Line_token, Message);
       Comment(
           "\n",
           "上昇エントリーあり②");
@@ -271,6 +279,8 @@ int Sign_Tool_Xauusd_4H(string Currency)
     {
       EntrySignFlag = 0;
       Print("上昇エントリーなし" + EntrySignFlag);
+      Message = "Currency： " + Currency + ", OrderType： BUY";
+      LineNotify(Line_token, Message);
       Comment(
           "\n",
           "上昇エントリーなし");
@@ -286,6 +296,8 @@ int Sign_Tool_Xauusd_4H(string Currency)
     {
       EntrySignFlag = 2;
       Print("下落エントリーフラグ①" + EntrySignFlag);
+      Message = "Currency： " + Currency + ", OrderType： SELL";
+      LineNotify(Line_token, Message);
       Comment(
           "\n",
           "下落エントリーあり①");
@@ -295,6 +307,8 @@ int Sign_Tool_Xauusd_4H(string Currency)
     {
       EntrySignFlag = 2;
       Print("下落エントリーフラグ②" + EntrySignFlag);
+      Message = "Currency： " + Currency + ", OrderType： SELL";
+      LineNotify(Line_token, Message);
       Comment(
           "\n",
           "下落エントリーあり②");
@@ -304,6 +318,8 @@ int Sign_Tool_Xauusd_4H(string Currency)
     {
       EntrySignFlag = 0;
       Print("下落エントリーなし" + EntrySignFlag);
+      Message = "Currency： " + Currency + ", OrderType： SELL";
+      LineNotify(Line_token, Message);
       Comment(
           "\n",
           "オーダーなし");
@@ -311,6 +327,32 @@ int Sign_Tool_Xauusd_4H(string Currency)
   }
   return (EntrySignFlag);
 }
+
+
+// LINE配信機能
+void LineNotify(string Token, string Message)
+{
+  string headers;        //ヘッダー
+  char data[], result[]; //データ、結果
+
+  headers = "Authorization: Bearer " + Token + "\r\n	application/x-www-form-urlencoded\r\n";
+  ArrayResize(data, StringToCharArray("message=" + Message, data, 0, WHOLE_ARRAY, CP_UTF8) - 1);
+  int res = WebRequest("POST", "https://notify-api.line.me/api/notify", headers, 0, data, data, headers);
+  if (res == -1) //エラーの場合
+  {
+    Print("Error in WebRequest. Error code  =", GetLastError());
+    MessageBox("Add the address 'https://notify-api.line.me' in the list of allowed URLs on tab 'Expert Advisors'", "Error", MB_ICONINFORMATION);
+  }
+}
+
+//エントリー時のスクリーンショット機能
+int piccount;
+string filename = "CHARTPIC_" +piccount + ".png";
+int width = 100;
+int height = 100;
+string ScreenShot;
+long chartId = 0;
+bool  ChartScreenShot(long chartId = 0,string filename,int width,int height,ENUM_ALIGN_MODE  align_mode = ALIGN_RIGHT);
 
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
@@ -339,19 +381,31 @@ void OnTick()
         {
           EntrySignFlag = Sign_Tool_Xauusd_4H(Currency);
           Print("エントリー通貨ペア" + Currency);
-          OrderFuncrion(Currency,EntrySignFlag);
+          Message = "Currency： " + Currency + ", OrderType： BUY";
+          ScreenShot = ChartScreenShot(chartId,filename,width,height,ALIGN_CENTER);
+          Message = Message + ScreenShot;
+          LineNotify(Line_token, Message);
         }else if(Currency == "XAUUSD"){
           EntrySignFlag = Sign_Tool_Xauusd_4H(Currency);
           Print("エントリー通貨ペア" + Currency);
-          OrderFuncrion(Currency,EntrySignFlag);
+          Message = "Currency： " + Currency + ", OrderType： BUY";
+          ScreenShot = ChartScreenShot(chartId,filename,width,height,ALIGN_CENTER);
+          Message = Message + ScreenShot;
+          LineNotify(Line_token, Message);
         }else if(Currency == "xauusd"){
           EntrySignFlag = Sign_Tool_Xauusd_4H(Currency);
           Print("エントリー通貨ペア" + Currency);
-          OrderFuncrion(Currency,EntrySignFlag);
+          Message = "Currency： " + Currency + ", OrderType： BUY";
+          ScreenShot = ChartScreenShot(chartId,filename,width,height,ALIGN_CENTER);
+          Message = Message + ScreenShot;
+          LineNotify(Line_token, Message);
         }else{
           EntrySignFlag = Sign_Tool_Xauusd_4H(Currency);
           Print("エントリー通貨ペア" + Currency);
-          OrderFuncrion(Currency,EntrySignFlag);
+          Message = "Currency： " + Currency + ", OrderType： BUY";
+          ScreenShot = ChartScreenShot(chartId,filename,width,height,ALIGN_CENTER);
+          Message = Message + ScreenShot;
+          LineNotify(Line_token, Message);
         }
       }
     }
@@ -359,15 +413,3 @@ void OnTick()
     Print("エントリーなし");
   }
 }
-
-//決済処理について
-//損益0以上もしくは
-//+------------------------------------------------------------------+
-//| Timer function                                                   |
-//+------------------------------------------------------------------+
-
-// 4時間ごとに処理を行う(正確には3時間30分が経過したあたりから確認を行う。)
-// void OnTimer()
-//{
-//---
-//}//+------------------------------------------------------------------+
