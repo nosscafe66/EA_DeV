@@ -31,6 +31,9 @@
 //⑥ピラミッティング判定処理
 //⑦損切り判定処理
 //⑧利益確定処理
+//上位足の水平線判定処理
+//上位足のトレンドライン判定処理
+
 
 input string Line_token = "";   // LINEのアクセストークン
 input string Send_Message = ""; // LINEに送りたいメッセージ
@@ -487,10 +490,10 @@ int HorizonCheckFunction(){
   double pre_Candle_W_start = iOpen(Currency, PERIOD_W1, 1);
   double pre_Candle_W_end = iClose(Currency, PERIOD_W1, 1);
 
-  //前日の日足の
-  if(){
-
-  }
+  ////前日の日足の
+  //if(){
+  //
+  //}
 }
 
 int TrendLineFlag;
@@ -641,13 +644,13 @@ int CrossMadantePerfectOrder(string Currency)
   return (EntryOrderFlag);
 }
 
-//トレンド判定後エントリーフラグ
-int TrendJudgeFlag;
-
-//トレンド判定関数
-int TrendJudgeCirculation()
-{
-}
+////トレンド判定後エントリーフラグ
+//int TrendJudgeFlag;
+//
+////トレンド判定関数
+//int TrendJudgeCirculation()
+//{
+//}
 
 // トレーリングストップのトレール幅
 //買いポジションの場合、価格が上昇したら、その上昇した価格の20ポイント下にロスカットラインを引き上げる設定
@@ -733,42 +736,67 @@ int LossCutFunction(int Ticket, int CandleStickFlag, string Currency)
   double LossCut_Candle_start = iOpen(Currency, PERIOD_M5, 1);
   double LossCut_Candle_end = iClose(Currency, PERIOD_M5, 1);
 
-  double LossCut_MA_5 = iMA(Currency, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 1);
-  double LossCut_MA_14 = iMA(Currency, 0, 14, 0, MODE_SMA, PRICE_CLOSE, 1);
-  double LossCut_MA_21 = iMA(Currency, 0, 21, 0, MODE_SMA, PRICE_CLOSE, 1);
-  double LossCut_MA_60 = iMA(Currency, 0, 60, 0, MODE_SMA, PRICE_CLOSE, 1);
+  //double LossCut_MA_5 = iMA(Currency, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 1);
+  //double LossCut_MA_14 = iMA(Currency, 0, 14, 0, MODE_SMA, PRICE_CLOSE, 1);
+  //double LossCut_MA_21 = iMA(Currency, 0, 21, 0, MODE_SMA, PRICE_CLOSE, 1);
+  //double LossCut_MA_60 = iMA(Currency, 0, 60, 0, MODE_SMA, PRICE_CLOSE, 1);
+
+  //先行スパンの値を取得する
+  double LossCut_SenkouSpanA = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 2, 1);
+
 
   //陰線の判定処理
   double Hidden_line = get_Candle_start - get_Candle_end;
+  
+  //決済注文変数宣言
+  bool orderClose;
 
   //損切り判定処理(5smaを陰線で完全に下抜けした場合)
   //陰線判定
+  //約定した価格と現在の価格が一定以上乖離したら損切りを執行数する処理
   // Print("================================Hidden_line"+ Hidden_line);
+  //買いポジションをを保有している場合の決済について、雲の中にローソク足が完全に潜った際に損切りを失効する
   Print("================================Hidden_line" + Hidden_line);
-  Print("LossCut_MA_14：" + LossCut_MA_14);
-  Print("LossCut_MA_5：" + LossCut_MA_5);
-  if (LossCut_MA_60 < LossCut_MA_5)
+  if (LossCut_SenkouSpanA > LossCut_Candle_high && LossCut_Candle_high > LossCut_Candle_start && LossCut_Candle_start > LossCut_Candle_end && LossCut_Candle_end > LossCut_Candle_low)
   {
     Print("================================決済処理スタート===============================");
     //保有ポジションを一つずつチェックしていく
     for (int i = OrdersTotal() - 1; i >= 0; i--)
     {
       Print("================================決済処理================================回数 :" + i);
-
       //保有ポジションを一つ選択
       if (OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
       {
-
         //選択したポジションが、実行されている通貨ペアと同じかどうかチェック
         if (OrderSymbol() == Symbol())
         {
-
           //選択したポジションが、この自動売買のマジックナンバーと同じかチェック
           if (OrderMagicNumber() == MAGICMA)
           {
-
             //ポジションを決済
-            bool orderClose = OrderClose(OrderTicket(), OrderLots(), OrderClosePrice(), 10, clrNONE);
+            orderClose = OrderClose(OrderTicket(), OrderLots(), OrderClosePrice(), 10, clrNONE);
+          }
+        }
+      }
+    }
+  }
+  //売りポジションをを保有している場合の決済について、雲の中にローソク足が完全に潜った際に損切りを失効する
+  else if(LossCut_Candle_high > LossCut_Candle_end && LossCut_Candle_end > LossCut_Candle_start && LossCut_Candle_low > LossCut_Candle_low && LossCut_Candle_low > LossCut_SenkouSpanA){
+    //保有ポジションを一つずつチェックしていく
+    for (int j = OrdersTotal() - 1; j >= 0; j--)
+    {
+      Print("================================決済処理================================回数 :" + j);
+      //保有ポジションを一つ選択
+      if (OrderSelect(j, SELECT_BY_POS, MODE_TRADES))
+      {
+        //選択したポジションが、実行されている通貨ペアと同じかどうかチェック
+        if (OrderSymbol() == Symbol())
+        {
+          //選択したポジションが、この自動売買のマジックナンバーと同じかチェック
+          if (OrderMagicNumber() == MAGICMA)
+          {
+            //ポジションを決済
+            orderClose = OrderClose(OrderTicket(), OrderLots(), OrderClosePrice(), 10, clrNONE);
           }
         }
       }

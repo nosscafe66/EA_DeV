@@ -4,6 +4,21 @@ https://pcoroom.com/post-5258/
 https://codelabsjp.net/mt4-ea-trailingstop/
 https://www.youtube.com/watch?v=KOA6-tTHw2A
 https://get-daze.net/2018/10/12/mt4-trailingstop/
+https://codelabsjp.net/mt4-ea-trailingstop/
+
+スクリーンショット
+https://takonegifx.com/post/mt4-mt5-ea-chartscreenshot/
+https://labo.gogojungle.co.jp/articles/80
+https://xn--fx-xt3c.jp/capture-indicator/
+https://yukifx.web.fc2.com/sub/reference/15_chartope/cone/chartope_chartscreenshot.html
+
+
+https://yukifx.web.fc2.com/index.html
+
+移動平均線の角度について
+https://fx-prog.com/ea-ma1/
+https://fx-prog.com/ea-ma/#toc9
+
 
 損益取得関数Pips
 https://ameblo.jp/wonderfulfxlife/entry-12574391761.html
