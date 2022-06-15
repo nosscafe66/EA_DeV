@@ -103,6 +103,13 @@ int NewCandleStickCheckFlag;
 //通貨ペアの変数宣言
 string Currency;
 
+//現在のチャートID
+long now_id;
+string filename;
+int width;
+int height;
+
+
 //指定したメールアドレスに送信する関数 or LINEにする。
 bool SendMail(
     string subject,  // header
@@ -477,7 +484,7 @@ double d1_low=iLow(NULL, PERIOD_D1,0);
 
 int HorizonFlag;
 //前日・前週の高値・安値を確認する処理
-int HorizonCheckFunction(){
+int HorizonCheckFunction(string Currency,int EntryOrderFlag){
   //前日のローソク足の値取得
   double pre_Candle_D_high = iHigh(Currency, PERIOD_D1, 1);
   double pre_Candle_D_low = iLow(Currency, PERIOD_D1, 1);
@@ -490,10 +497,33 @@ int HorizonCheckFunction(){
   double pre_Candle_W_start = iOpen(Currency, PERIOD_W1, 1);
   double pre_Candle_W_end = iClose(Currency, PERIOD_W1, 1);
 
-  ////前日の日足の
-  //if(){
-  //
-  //}
+  //2日前のローソク足の値取得
+  double pre2_Candle_D_high = iHigh(Currency, PERIOD_D1, 2);
+  double pre2_Candle_D_low = iLow(Currency, PERIOD_D1, 2);
+  double pre2_Candle_D_start = iOpen(Currency, PERIOD_D1, 2);
+  double pre2_Candle_D_end = iClose(Currency, PERIOD_D1, 2);
+
+  //2週前のローソク足の値取得
+  double pre2_Candle_W_high = iHigh(Currency, PERIOD_W1, 2);
+  double pre2_Candle_W_low = iLow(Currency, PERIOD_W1, 2);
+  double pre2_Candle_W_start = iOpen(Currency, PERIOD_W1, 2);
+  double pre2_Candle_W_end = iClose(Currency, PERIOD_W1, 2);
+
+  //買いエントリーの場合は前回の高値付近に現在の価格が近づいたら検知する
+  //Bid
+  if(EntryOrderFlag == 1){
+    if(Bid == pre_Candle_D_high){
+      HorizonFlag = 1;
+    }
+  }
+  //売りエントリーの場合は前回の安値付近に現在の価格が近づいたら検知する
+  //Ask
+  else if(EntryOrderFlag == 2){
+    if(Ask == pre_Candle_D_low){
+       HorizonFlag = 2;
+    }
+  }
+  return(HorizonFlag);
 }
 
 int TrendLineFlag;
@@ -571,7 +601,7 @@ int CrossMadantePerfectOrder(string Currency)
           // 5SMAのローソク足陽線上抜け条件判定処理(例外として移動平均から乖離しすぎている場合はエントリーしない)
           Kairi_Value = (get_Candle_end - get_MA_5) * 100 / get_MA_5;
           if (get_Candle_high > get_Candle_end && get_Candle_end > get_MA_5 && Kairi_Value < 0.25)
-          {
+          { 
             EntryOrderFlag = 1;
             Message = "Currency： " + Currency + ", OrderType： BUY" + ", Ticket番号：" + Ticket + ", 乖離率：" + Kairi_Value;
             //LineNotify(Line_token, Message);
@@ -654,7 +684,7 @@ int CrossMadantePerfectOrder(string Currency)
 
 // トレーリングストップのトレール幅
 //買いポジションの場合、価格が上昇したら、その上昇した価格の20ポイント下にロスカットラインを引き上げる設定
-double TrailingStop = 500;
+double TrailingStop = 1;//500
 
 int TraillingStopFunction(int CandleStickFlag, string Currency)
 {
@@ -744,7 +774,6 @@ int LossCutFunction(int Ticket, int CandleStickFlag, string Currency)
   //先行スパンの値を取得する
   double LossCut_SenkouSpanA = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 2, 1);
 
-
   //陰線の判定処理
   double Hidden_line = get_Candle_start - get_Candle_end;
   
@@ -824,13 +853,16 @@ void LineNotify(string Token, string Message)
 void OnTick()
 {
   //通貨ペアの指定
-  string ArraySymbol[5] = {"USDJPY", "EURUSD", "GBPUSD", "GBPJPY", "AUDJPY"}; //希望としてはトレンドの発生しやすい通貨など、、手入力のパラメーターでもいい。
+  string ArraySymbol[6] = {"USDJPY", "EURUSD", "GBPUSD", "GBPJPY", "AUDJPY", "EURJPY"}; //希望としてはトレンドの発生しやすい通貨など、、手入力のパラメーターでもいい。
 
   //移動平均線&一目均衡表のエントリーフラグ
   int EntryOrderFlag;
 
   //通貨ペアのコメント表示
-  Comment(modifySymbol(ArraySymbol[0]) + "¥n" + modifySymbol(ArraySymbol[1]) + "¥n" + modifySymbol(ArraySymbol[2]) + "¥n" + modifySymbol(ArraySymbol[3]) + "¥n" + modifySymbol(ArraySymbol[4]));
+  Comment(modifySymbol(ArraySymbol[0]) + "¥n" + modifySymbol(ArraySymbol[1]) + "¥n" + modifySymbol(ArraySymbol[2]) + "¥n" + modifySymbol(ArraySymbol[3]) + "¥n" + modifySymbol(ArraySymbol[4])+ "¥n" + modifySymbol(ArraySymbol[5]));
+
+  //チャートID取得
+  now_id = ChartID();
 
   // Print("現在のポジション数" + OrdersTotal());
   //新しいローソク足ができていることを確認してから処理を開始
@@ -838,12 +870,9 @@ void OnTick()
   if (NewCandleStickCheckFlag == 1)
   {
     //取得した通貨ペアの個数分エントリー条件の判定処理を実施する処理(想定では最大5回のループ処理)
-    // Print("処理開始"); //いずれ消す
     //配列に格納している通貨ペアの個数分(条件判定・エントリー判定の処理を行う、決済判定の処理を行う)
     for (int LoopCount = 0; LoopCount < ArraySize(ArraySymbol); LoopCount++)
     {
-      // Print("ループ回数：" + LoopCount + "回目です。 現在の通貨は" + ArraySymbol[LoopCount] + "です。"); //いずれ消す
-
       //通貨ペアの名称取得
       Currency = modifySymbol(ArraySymbol[LoopCount]); //======関数2======
       //〜注文処理を実行する〜
@@ -851,25 +880,28 @@ void OnTick()
       //クロスマダンテエントリー条件判定処理
       EntryOrderFlag = CrossMadantePerfectOrder(Currency); //======関数3======
 
-      // Print("CandleStickFlag:" + EntryOrderFlag); //いずれ消す
       //上昇エントリーフラグ
       if (EntryOrderFlag == 1)
       {
-        // Print("UpEntryFlag:" + EntryOrderFlag); //いずれ消す
         //オーダーが0から5つ以下のポジションの時に実行をする
         if (OrdersTotal() <= 5)
         {
-          //注文処理(チケット発行)
-          Ticket = OrderFuncrion(Currency, EntryOrderFlag);
-          TraillingStopFunction(EntryOrderFlag, Currency);
-          //トレーリングストップを設定してもなお未決済のポジションがある場合は損切りを失効する処理
-          //OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
-
+          //上位足の水平線判定処理関数呼び出し
+          HorizonFlag = HorizonCheckFunction(Currency,EntryOrderFlag);
+          if(HorizonFlag = 1){
+            //注文処理(チケット発行)
+            Ticket = OrderFuncrion(Currency, EntryOrderFlag);
+            //スクショ機能
+            //Pic = ChartScreenShot(now_id,filename,width,height,ENUM_ALIGN_MODE  align_mode = ALIGN_RIGHT);
+            TraillingStopFunction(EntryOrderFlag, Currency);
+            //トレーリングストップを設定してもなお未決済のポジションがある場合は損切りを失効する処理
+            OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
+          }
+          //エラー処理
           if (Ticket != -1)
           {
-            // Print("チケット番号:" + Ticket + " UpEntryFlag:" + EntryOrderFlag); //いずれ消す
             // OrderCheckFlag = OrderCheck(Ticket, EntryOrderFlag);
-            //OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
+            OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
             if (OrderCheckFlag == 0)
             {
               OrderFuncrion(Currency, EntryOrderFlag);
@@ -890,7 +922,7 @@ void OnTick()
           //トレーリングストップ処理
           TraillingStopFunction(EntryOrderFlag, Currency);
           //トレーリングストップを設定してもなお未決済のポジションがある場合は損切りを失効する処理
-          //OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
+          OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
         }
         else
         {
@@ -908,17 +940,24 @@ void OnTick()
         //オーダーが0から5つ以下のポジションの時に実行をする
         if (OrdersTotal() <= 5)
         {
-          //注文処理(チケット発行)
-          Ticket = OrderFuncrion(Currency, EntryOrderFlag);
-          TraillingStopFunction(EntryOrderFlag, Currency);
-          //トレーリングストップを設定してもなお未決済のポジションがある場合は損切りを失効する処理
-          //OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
+          //上位足の水平線判定処理関数呼び出し
+          HorizonFlag = HorizonCheckFunction(Currency,EntryOrderFlag);
+          if(HorizonFlag == 2){
+            //注文処理(チケット発行)
+            Ticket = OrderFuncrion(Currency, EntryOrderFlag);
+            //スクショ機能
+            //Pic = ChartScreenShot(now_id,filename,width,height,ENUM_ALIGN_MODE  align_mode = ALIGN_RIGHT);
+            TraillingStopFunction(EntryOrderFlag, Currency);
+            //トレーリングストップを設定してもなお未決済のポジションがある場合は損切りを失効する処理
+            OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
+          }
+          //エラー処理
           if (Ticket != -1)
           {
             // Print("チケット番号:" + Ticket + " DownEntryFlag:" + EntryOrderFlag); //いずれ消す
             //決済処理(雲の中に隠れてしまった場合・20pips固定のどちらかの条件に当てはまった場合に損切りを行う)
             // OrderCheckFlag = OrderCheck(Ticket, EntryOrderFlag);
-            //OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
+            OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
             if (OrderCheckFlag == 0)
             {
               OrderFuncrion(Currency, EntryOrderFlag);
@@ -935,11 +974,10 @@ void OnTick()
           // Print("トレーリングストップを設定するポジション数です。" + OrdersTotal());
           // Print("通貨ペアは" + Currency);
           // Print("エントリーフラグ" + EntryOrderFlag);
-          // Print("================================決済処理================================");
           //トレーリングストップ処理
           TraillingStopFunction(EntryOrderFlag, Currency);
           //トレーリングストップを設定してもなお未決済のポジションがある場合は損切りを失効する処理
-          //OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
+          OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
         }
         else
         {
