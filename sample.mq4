@@ -5,14 +5,19 @@
 //+------------------------------------------------------------------+
 #property copyright "2005-2014, MetaQuotes Software Corp."
 #property link "http://www.mql4.com"
-//#property version "1.00"
+#property version "1.00"
 //#property strict
 #define MAGICMA 20228888
-//#property indicator_chart_window
-//参考ソースコードhttps://investment-vmoney.com/archives/4889?amp=1
+#property indicator_separate_window
+#property indicator_minimum -90.0
+#property indicator_maximum 90.0
+#property indicator_buffers 1
+#property indicator_color1 Blue
+
+#property indicator_chart_window
 #property indicator_color1 Yellow;  //D1 Low and High
-#property indicator_color2 clrBlue; //H4 Low and High
-#property indicator_color3 clrBlue; //H1 Low and High
+#property indicator_color2 clrPeru; //H4 Low and High
+#property indicator_color3 clrIndianRed; //H1 Low and High
 
 //======各種フラグの説明=======
 //基本的な上昇・下降の判定
@@ -35,6 +40,14 @@
 //上位足のトレンドライン判定処理
 
 
+//---- input parameters
+extern int MovingAvaragePeriod = 25;
+extern double BarWidth = 0.1;
+
+//---- buffers
+double ExtMapBuffer1[];
+
+//LINE配信機能
 input string Line_token = "";   // LINEのアクセストークン
 input string Send_Message = ""; // LINEに送りたいメッセージ
 
@@ -54,6 +67,13 @@ double get_MA_21;
 double get_MA_60;
 double get_MA_240;
 double get_MA_1440;
+
+double pre_get_MA_5;
+double pre_get_MA_14;
+double pre_get_MA_21;
+double pre_get_MA_60;
+double pre_get_MA_240; 
+double pre_get_MA_1440;
 
 //一目均衡表の値取得宣言(Ontickで取得した値が毎回更新される)
 double Tenkansen;
@@ -103,11 +123,18 @@ int NewCandleStickCheckFlag;
 //通貨ペアの変数宣言
 string Currency;
 
-//指定したメールアドレスに送信する関数 or LINEにする。
-bool SendMail(
-    string subject,  // header
-    string some_text // email text
-);
+//一度にエントリーできる通貨ペアの数の設定(最大5個まで)、この個数の中でループで条件判定を行う。
+int EntryCurrencyCountMax = 5;
+
+//現在のチャートID変数宣言
+long now_id;
+string filename;
+int width;
+int height;
+
+//直近の高値と安値の変数宣言
+double MostRecent_LowPrice;
+double MostRecent_HighPrice;
 
 //=======表示するチャートのカラー設定をする関数(クロスマダンテ仕様)=======
 void setupChart(long chartId = 0)
@@ -145,13 +172,22 @@ void setupChart(long chartId = 0)
 }
 
 //=======業者間の通貨ペアの取得ができるようにする=======
-//サフィックスの設定
-// string suffix;
+//Pips業者間均一化機能
+void PipsFunction()
+{
+double ticksize=MarketInfo(Symbol(),MODE_TICKSIZE);
+   if(ticksize == 0.00001)
+   {
+   pips = ticksize*10;
+   }
+   else
+   {
+   pips = ticksize;
+   }
+return;
+}
 
-//通貨ペア取得フラグ
-// int GetCurrencyFlag;
-
-//通貨ペア取得関数
+//通貨ペア業者間取得機能
 string modifySymbol(string symbol)
 {
   int length = StringLen(Symbol());
@@ -164,9 +200,6 @@ string modifySymbol(string symbol)
   }
   return (symbol);
 }
-
-//一度にエントリーできる通貨ペアの数の設定(最大5個まで)、この個数の中でループで条件判定を行う。
-int EntryCurrencyCountMax = 5;
 
 //======================全通貨ペアに対して以下の設定を処理を判定する======================
 
@@ -221,6 +254,10 @@ datetime time = Time[0];
 int NewCandleStickFlag;
 int NewBar = 0;
 
+//pipsの設定
+double pips = 0;
+
+
 int OnInit()
 {
   //日足の水平線の値を表示するための設定
@@ -252,18 +289,10 @@ int OnDeinit()
    return 0;
 }
 
-//参考ソースコードhttps://investment-vmoney.com/archives/4889?amp=1
-int OnCalculate(const int rates_total,
-                const int prev_calculated,
-                const datetime &time[],
-                const double &open[],
-                const double &high[],
-                const double &low[],
-                const double &close[],
-                const long &tick_volume[],
-                const long &volume[],
-                const int &spread[])
-  {
+double GetHorizenLine;
+
+//上位足のトレンドライン判定処理
+double GetHorizenLineFunction(int EntryOrderFlag){
 //---
    int i=0;
 
@@ -323,15 +352,13 @@ int OnCalculate(const int rates_total,
       ObjectSet("H1 High", OBJPROP_COLOR, indicator_color3);      
       ObjectSet("H1 High", OBJPROP_WIDTH, 2);
    }
-
-
-
-//--- return value of prev_calculated for next call
-   return(rates_total);
-  }
-
-//参考ソースコードhttps://investment-vmoney.com/archives/4889?amp=1
-
+   if(EntryOrderFlag == 1){
+      GetHorizenLine = h1_high;
+   }else if(EntryOrderFlag == 2){
+      GetHorizenLine = h1_low;
+   }
+   return(GetHorizenLine);
+}
 
 
 
@@ -402,7 +429,7 @@ int OrderFuncrion(string Currency, int EntryOrderFlag)
     volume = 0.1; //関数化しておく
     price = Ask;
     slippage = 30;
-    stoploss = 20;
+    stoploss = 0;
     takeprofit = 0;
     comment = "";
     magic = MAGICMA;
@@ -420,7 +447,7 @@ int OrderFuncrion(string Currency, int EntryOrderFlag)
     volume = 0.1; //関数化しておく
     price = Bid;
     slippage = 30;
-    stoploss = 20;
+    stoploss = 0;
     takeprofit = 0;
     comment = "";
     magic = MAGICMA;
@@ -508,7 +535,7 @@ int EntryOrderFlag;
 //クロスマダンテエントリー条件関数(パーフェクトオーダー判定処理)
 int CrossMadantePerfectOrder(string Currency)
 {
-  //移動平均線の値を取得
+  //移動平均線の値を取得(一つ前)
   get_MA_5 = iMA(Currency, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 1);
   get_MA_14 = iMA(Currency, 0, 14, 0, MODE_SMA, PRICE_CLOSE, 1);
   get_MA_21 = iMA(Currency, 0, 21, 0, MODE_SMA, PRICE_CLOSE, 1);
@@ -516,13 +543,20 @@ int CrossMadantePerfectOrder(string Currency)
   get_MA_240 = iMA(Currency, 0, 240, 0, MODE_SMA, PRICE_CLOSE, 1);
   get_MA_1440 = iMA(Currency, 0, 1440, 0, MODE_SMA, PRICE_CLOSE, 1);
 
+  //移動平均線の値を取得(二つ前)
+  pre_get_MA_5 = iMA(Currency, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 2);
+  pre_get_MA_14 = iMA(Currency, 0, 14, 0, MODE_SMA, PRICE_CLOSE, 2);
+  pre_get_MA_21 = iMA(Currency, 0, 21, 0, MODE_SMA, PRICE_CLOSE, 2);
+  pre_get_MA_60 = iMA(Currency, 0, 60, 0, MODE_SMA, PRICE_CLOSE, 2);
+  pre_get_MA_240 = iMA(Currency, 0, 240, 0, MODE_SMA, PRICE_CLOSE, 2);
+  pre_get_MA_1440 = iMA(Currency, 0, 1440, 0, MODE_SMA, PRICE_CLOSE, 2);
+
   //一目均衡表の値を取得(重要なのは先行スパンA,B=雲になる)
   get_Tenkansen = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 0, 1);
   get_Kijunsen = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 1, 1);
   get_SenkouSpanA = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 2, 1);
   get_SenkouSpanB = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 3, 1);
   get_ChikouSpan = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 4, 27);
-  // iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 0, 1);
 
   //ローソク足の値取得
   get_Candle_high = iHigh(Currency, PERIOD_M5, 1);
@@ -550,8 +584,9 @@ int CrossMadantePerfectOrder(string Currency)
 
   //======前提条件確認：雲とローソク足の位置関係を判定し上昇トレンドか下降トレンドを判定する======
   /// OrderFlag が 1の時は上昇エントリー
-  //上昇パーフェクトオーダーの条件判定処理(大前提条件)
-  if (get_MA_5 > get_MA_14 && get_MA_14 > get_MA_21 && get_MA_21 > get_MA_60 && get_MA_60 > get_MA_240 && get_MA_240 > get_MA_1440)
+  //上昇パーフェクトオーダー&全ての移動平均線が前回より大きい=傾きがある時のみの条件判定処理(大前提条件)
+  if (get_MA_5 > get_MA_14 && get_MA_14 > get_MA_21 && get_MA_21 > get_MA_60 && get_MA_60 > get_MA_240 && get_MA_240 > get_MA_1440 &
+    get_MA_5 > pre_get_MA_5 && get_MA_14 > pre_get_MA_14 && get_MA_21 > pre_get_MA_21 && get_MA_60 > pre_get_MA_60 && get_MA_240 > pre_get_MA_240 && get_MA_1440 > pre_get_MA_1440)
   {
     //ローソク足の雲の内外存在判定処理
     if (get_Candle_high > get_Candle_end && get_Candle_end > get_Candle_start && get_Candle_start > get_Candle_low && get_Candle_low > get_SenkouSpanA)
@@ -571,7 +606,7 @@ int CrossMadantePerfectOrder(string Currency)
           // 5SMAのローソク足陽線上抜け条件判定処理(例外として移動平均から乖離しすぎている場合はエントリーしない)
           Kairi_Value = (get_Candle_end - get_MA_5) * 100 / get_MA_5;
           if (get_Candle_high > get_Candle_end && get_Candle_end > get_MA_5 && Kairi_Value < 0.25)
-          {
+          { 
             EntryOrderFlag = 1;
             Message = "Currency： " + Currency + ", OrderType： BUY" + ", Ticket番号：" + Ticket + ", 乖離率：" + Kairi_Value;
             //LineNotify(Line_token, Message);
@@ -593,11 +628,14 @@ int CrossMadantePerfectOrder(string Currency)
   //======上記で取得した処理フラグをもとに移動平均線とローソク足の位置関係を判定する======
   // OrderFlag が 2の時は下降エントリー
   //下降パーフェクトオーダーの条件判定処理
-  else if (get_MA_5 < get_MA_14 && get_MA_14 < get_MA_21 && get_MA_21 < get_MA_60 && get_MA_60 < get_MA_240 && get_MA_240 < get_MA_1440)
+  else if (get_MA_5 < get_MA_14 && get_MA_14 < get_MA_21 && get_MA_21 < get_MA_60 && get_MA_60 < get_MA_240 && get_MA_240 < get_MA_1440 &
+  get_MA_5 < pre_get_MA_5 && get_MA_14 < pre_get_MA_14 && get_MA_21 < pre_get_MA_21 && get_MA_60 < pre_get_MA_60 && get_MA_240 < pre_get_MA_240 && get_MA_1440 < pre_get_MA_1440
+  )
   {
     //ローソク足の雲の内外存在判定処理
     if (get_Candle_low < get_Candle_end && get_Candle_end < get_Candle_start && get_Candle_start < get_Candle_high && get_Candle_high < get_SenkouSpanA)
     {
+      Print("Hiddenline: " + Hidden_line);
       //確定したひとつ前のローソク足の陰線判定
       if (Hidden_line > 0)
       {
@@ -612,8 +650,9 @@ int CrossMadantePerfectOrder(string Currency)
         if (Compare_Candle < 50)
         {
           // 5SMAのローソク陰線下抜け条件判定処理(例外として移動平均から乖離しすぎている場合はエントリーしない)
-          Kairi_Value = ((get_MA_5 - get_Candle_end) * 100 / get_MA_5) * 100;
-          if (get_Candle_low < get_Candle_end && get_Candle_end > get_MA_5 && Kairi_Value < 10)
+          Kairi_Value = (get_MA_5 - get_Candle_end) * 100 / get_MA_5;
+          Print("Kairi_Value: " + Kairi_Value);
+          if (get_Candle_low < get_Candle_end && get_Candle_end > get_MA_5 && Kairi_Value < 0.25)
           {
             EntryOrderFlag = 2;
             Message = "Currency： " + Currency + ", OrderType： SELL" + ", Ticket番号：" + Ticket + ", 乖離率：" + Kairi_Value;
@@ -700,7 +739,7 @@ int TraillingStopFunction(int CandleStickFlag, string Currency)
           {
             Print("トレーリングストップ設定");
             Message = "トレーリングストップ：　Currency： " + Currency;
-            LineNotify(Line_token, Message);
+            //LineNotify(Line_token, Message);
             OrderModify(OrderTicket(), OrderOpenPrice(),Bid - Point * Max_Stop_Loss_Buy,OrderTakeProfit(),0,clrNONE);
           }
         }
@@ -717,7 +756,7 @@ int TraillingStopFunction(int CandleStickFlag, string Currency)
           {
             Print("トレーリングストップ設定");
             Message = "トレーリングストップ：　Currency： " + Currency;
-            LineNotify(Line_token, Message);
+            //LineNotify(Line_token, Message);
             OrderModify(OrderTicket(), OrderOpenPrice(), Max_Stop_Loss_Sell, 0, 0);
           }
         }
@@ -823,7 +862,7 @@ void LineNotify(string Token, string Message)
 void OnTick()
 {
   //通貨ペアの指定
-  string ArraySymbol[6] = {"USDJPY", "EURUSD", "GBPUSD", "GBPJPY", "AUDJPY", "EURJPY"}; //希望としてはトレンドの発生しやすい通貨など、、手入力のパラメーターでもいい。
+  string ArraySymbol[6] = {"USDJPY"}; //希望としてはトレンドの発生しやすい通貨など、、手入力のパラメーターでもいい。
 
   //移動平均線&一目均衡表のエントリーフラグ
   int EntryOrderFlag;
@@ -850,6 +889,8 @@ void OnTick()
       //上昇エントリーフラグ
       if (EntryOrderFlag == 1)
       {
+        MostRecent_LowPrice = GetHorizenLineFunction(EntryOrderFlag);
+        Print("現在の安値" + MostRecent_LowPrice);
         //オーダーが0から5つ以下のポジションの時に実行をする
         if (OrdersTotal() <= 5)
         {
@@ -897,6 +938,8 @@ void OnTick()
       //下降エントリーフラグ
       else if (EntryOrderFlag == 2)
       {
+        MostRecent_HighPrice = GetHorizenLineFunction(EntryOrderFlag);
+        Print("現在の高値" + MostRecent_HighPrice);
         // Print("DownEntryFlag:" + EntryOrderFlag); //いずれ消す
         //オーダーが0から5つ以下のポジションの時に実行をする
         if (OrdersTotal() <= 5)

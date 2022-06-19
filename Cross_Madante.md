@@ -19,6 +19,8 @@ https://yukifx.web.fc2.com/index.html
 https://fx-prog.com/ea-ma1/
 https://fx-prog.com/ea-ma/#toc9
 
+角度について
+http://victor.cocolog-nifty.com/blog/2008/02/chartstudio_11_09a1.html
 
 損益取得関数Pips
 https://ameblo.jp/wonderfulfxlife/entry-12574391761.html

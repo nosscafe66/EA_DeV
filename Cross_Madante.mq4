@@ -5,36 +5,28 @@
 //+------------------------------------------------------------------+
 #property copyright "2005-2014, MetaQuotes Software Corp."
 #property link "http://www.mql4.com"
-//#property version "1.00"
+#property version "1.00"
 //#property strict
 #define MAGICMA 20228888
-//#property indicator_chart_window
-//参考ソースコードhttps://investment-vmoney.com/archives/4889?amp=1
+#property indicator_separate_window
+#property indicator_minimum -90.0
+#property indicator_maximum 90.0
+#property indicator_buffers 1
+#property indicator_color1 Blue
+
+#property indicator_chart_window
 #property indicator_color1 Yellow;  //D1 Low and High
-#property indicator_color2 clrBlue; //H4 Low and High
-#property indicator_color3 clrBlue; //H1 Low and High
+#property indicator_color2 clrPeru; //H4 Low and High
+#property indicator_color3 clrIndianRed; //H1 Low and High
 
-//======各種フラグの説明=======
-//基本的な上昇・下降の判定
-//上昇：1、下降：2、何もしない：0
-//基本的は買い注文、売り注文の判定
-//買い：1、売り：2、何もしない：0
-//通貨ペア取得フラグ
-//通貨ペア取得できた：1、取得できない：0
+//---- input parameters
+extern int MovingAvaragePeriod = 25;
+extern double BarWidth = 0.1;
 
-//=======処理の順番について=======
-//①NewCandleStickCheck()：新しいローソク足の判定処理
-//②CandleStickCirculation()：ローソク足の確定後にエントリー条件の確認処理CrossMadantePerfectOrder()を実行
-//③GlocalVariableUpdate()：の実行により取得した各種値をグローバル変数としてアップデートする処理
-//④OrderFuncrion()：グローバル変数を格納後に注文処理
-//⑤注文したポジションにたいていのオーダー確認処理、
-//⑥ピラミッティング判定処理
-//⑦損切り判定処理
-//⑧利益確定処理
-//上位足の水平線判定処理
-//上位足のトレンドライン判定処理
+//---- buffers
+double ExtMapBuffer1[];
 
-
+//LINE配信機能
 input string Line_token = "";   // LINEのアクセストークン
 input string Send_Message = ""; // LINEに送りたいメッセージ
 
@@ -103,18 +95,18 @@ int NewCandleStickCheckFlag;
 //通貨ペアの変数宣言
 string Currency;
 
-//現在のチャートID
+//一度にエントリーできる通貨ペアの数の設定(最大5個まで)、この個数の中でループで条件判定を行う。
+int EntryCurrencyCountMax = 5;
+
+//現在のチャートID変数宣言
 long now_id;
 string filename;
 int width;
 int height;
 
-
-//指定したメールアドレスに送信する関数 or LINEにする。
-bool SendMail(
-    string subject,  // header
-    string some_text // email text
-);
+//直近の高値と安値の変数宣言
+double MostRecent_LowPrice;
+double MostRecent_HighPrice;
 
 //=======表示するチャートのカラー設定をする関数(クロスマダンテ仕様)=======
 void setupChart(long chartId = 0)
@@ -151,14 +143,22 @@ void setupChart(long chartId = 0)
   ChartRedraw(chartId);
 }
 
-//=======業者間の通貨ペアの取得ができるようにする=======
-//サフィックスの設定
-// string suffix;
+//Pips業者間均一化機能
+void PipsFunction()
+{
+double ticksize=MarketInfo(Symbol(),MODE_TICKSIZE);
+   if(ticksize == 0.00001)
+   {
+   pips = ticksize*10;
+   }
+   else
+   {
+   pips = ticksize;
+   }
+return;
+}
 
-//通貨ペア取得フラグ
-// int GetCurrencyFlag;
-
-//通貨ペア取得関数
+//通貨ペア業者間取得機能
 string modifySymbol(string symbol)
 {
   int length = StringLen(Symbol());
@@ -166,14 +166,10 @@ string modifySymbol(string symbol)
   if (length > 6)
   {
     includedCharacter = StringSubstr(Symbol(), 6, length - 6);
-    // Print("通貨ペアは" + symbol + "サフィックスは" + includedCharacter + "です。"); //いずれ消す
     return (symbol + includedCharacter);
   }
   return (symbol);
 }
-
-//一度にエントリーできる通貨ペアの数の設定(最大5個まで)、この個数の中でループで条件判定を行う。
-int EntryCurrencyCountMax = 5;
 
 //======================全通貨ペアに対して以下の設定を処理を判定する======================
 
@@ -228,119 +224,28 @@ datetime time = Time[0];
 int NewCandleStickFlag;
 int NewBar = 0;
 
+//pipsの設定
+double pips = 0;
+
 int OnInit()
 {
-  //日足の水平線の値を表示するための設定
-   ObjectDelete("D1 Low");   
-   ObjectDelete("D1 High");      
-   ObjectDelete("H4 Low");   
-   ObjectDelete("H4 High");      
-   ObjectDelete("H1 Low");   
-   ObjectDelete("H1 High");
-
+  SetIndexStyle(0,DRAW_LINE);
+  SetIndexBuffer(0,ExtMapBuffer1);
+  ObjectsDeleteAll();
   //起動時に現在のバーを記録
   NewBar = Bars;
   setupChart();
   LineNotify(Line_token, Send_Message); // LineNotifyを呼び出し
+  PipsFunction();
   return (INIT_SUCCEEDED);
 }
 
 //処理が全て終了したら表示を削除する
 int OnDeinit()
 {
-
-   ObjectDelete("D1 Low");   
-   ObjectDelete("D1 High");      
-   ObjectDelete("H4 Low");   
-   ObjectDelete("H4 High");      
-   ObjectDelete("H1 Low");   
-   ObjectDelete("H1 High");      
-
+   ObjectsDeleteAll();
    return 0;
 }
-
-//参考ソースコードhttps://investment-vmoney.com/archives/4889?amp=1
-int OnCalculate(const int rates_total,
-                const int prev_calculated,
-                const datetime &time[],
-                const double &open[],
-                const double &high[],
-                const double &low[],
-                const double &close[],
-                const long &tick_volume[],
-                const long &volume[],
-                const int &spread[])
-  {
-//---
-   int i=0;
-
-   //Torday
-   double d1_high=iHigh(NULL, PERIOD_D1,0); 
-   double d1_low=iLow(NULL, PERIOD_D1,0);     
-   
-   if (Period() < PERIOD_D1) {  
-      ObjectDelete("D1 Low");
-      ObjectCreate("D1 Low",OBJ_HLINE, 0, Time[0], d1_low);
-      ObjectSet("D1 Low", OBJPROP_STYLE, STYLE_SOLID);
-      ObjectSet("D1 Low", OBJPROP_COLOR, indicator_color1);
-      ObjectSet("D1 Low", OBJPROP_WIDTH, 2);
-      
-      
-      ObjectDelete("D1 High");
-      ObjectCreate("D1 High",OBJ_HLINE, 0, Time[0], d1_high);
-      ObjectSet("D1 High", OBJPROP_STYLE, STYLE_SOLID);
-      ObjectSet("D1 High", OBJPROP_COLOR, indicator_color1);      
-      ObjectSet("D1 High", OBJPROP_WIDTH, 2);
-
-   }
-
-   //h4
-   double h4_high = iHigh(NULL, PERIOD_H4,0);
-   double h4_low  = iLow(NULL,PERIOD_H4,0);
-
-   if (Period() < PERIOD_H4) {  
-      ObjectDelete("H4 Low");
-      ObjectCreate("H4 Low",OBJ_HLINE, 0, Time[0], h4_low);
-      ObjectSet("H4 Low", OBJPROP_STYLE, STYLE_SOLID);
-      ObjectSet("H4 Low", OBJPROP_COLOR, indicator_color2);
-      ObjectSet("H4 Low", OBJPROP_WIDTH, 2);
-      
-      ObjectDelete("H4 High");
-      ObjectCreate("H4 High",OBJ_HLINE, 0, Time[0], h4_high);
-      ObjectSet("H4 High", OBJPROP_STYLE, STYLE_SOLID);
-      ObjectSet("H4 High", OBJPROP_COLOR, indicator_color2);      
-      ObjectSet("H4 High", OBJPROP_WIDTH, 2);
-   }
-
-
-   //h1
-   double h1_high = iHigh(NULL, PERIOD_H1,0);
-   double h1_low  = iLow(NULL,PERIOD_H1,0);
-
-   if (Period() < PERIOD_H1) {  
-      ObjectDelete("H1 Low");
-      ObjectCreate("H1 Low",OBJ_HLINE, 0, Time[0], h1_low);
-      ObjectSet("H1 Low", OBJPROP_STYLE, STYLE_SOLID);
-      ObjectSet("H1 Low", OBJPROP_COLOR, indicator_color3);
-      ObjectSet("H1 Low", OBJPROP_WIDTH, 2);
-      
-      ObjectDelete("H1 High");
-      ObjectCreate("H1 High",OBJ_HLINE, 0, Time[0], h1_high);
-      ObjectSet("H1 High", OBJPROP_STYLE, STYLE_SOLID);
-      ObjectSet("H1 High", OBJPROP_COLOR, indicator_color3);      
-      ObjectSet("H1 High", OBJPROP_WIDTH, 2);
-   }
-
-
-
-//--- return value of prev_calculated for next call
-   return(rates_total);
-  }
-
-//参考ソースコードhttps://investment-vmoney.com/archives/4889?amp=1
-
-
-
 
 //新しいローソク足の生成チェック関数(凍結対策)
 int NewCandleStickCheck()
@@ -406,16 +311,16 @@ int OrderFuncrion(string Currency, int EntryOrderFlag)
     //買い注文設定
     symbol = Currency;
     cmd = OP_BUY;
-    volume = 0.1; //関数化しておく
+    volume = 1.1; //関数化しておく
     price = Ask;
     slippage = 30;
-    stoploss = 20;
+    stoploss = 200;
     takeprofit = 0;
     comment = "";
     magic = MAGICMA;
     expiration = 0;
     arrow_color = clrBlue;
-    Ticket = OrderSend(symbol, cmd, volume, price, slippage, stoploss, takeprofit, "", magic, expiration, arrow_color);
+    Ticket = OrderSend(symbol, cmd, volume, price, slippage, stoploss*pips, takeprofit, "", magic, expiration, arrow_color);
     OrderFlag = 1;
   }
   //下降エントリー設定処理
@@ -424,16 +329,16 @@ int OrderFuncrion(string Currency, int EntryOrderFlag)
     //売り注文設定
     symbol = Currency;
     cmd = OP_SELL;
-    volume = 0.1; //関数化しておく
+    volume = 1.1; //関数化しておく
     price = Bid;
     slippage = 30;
-    stoploss = 20;
+    stoploss = 200;
     takeprofit = 0;
     comment = "";
     magic = MAGICMA;
     expiration = 0;
     arrow_color = clrRed;
-    Ticket = OrderSend(symbol, cmd, volume, price, slippage, stoploss, takeprofit, "", magic, expiration, arrow_color);
+    Ticket = OrderSend(symbol, cmd, volume, price, slippage, stoploss*pips, takeprofit, "", magic, expiration, arrow_color);
     OrderFlag = 2;
   }
   else
@@ -445,46 +350,13 @@ int OrderFuncrion(string Currency, int EntryOrderFlag)
   return (Ticket);
 }
 
-////ローソク足の陰陽確認フラグ
-//int CandleStickCheck;
-//
-////ローソク足の陰陽確認関数(髭と実体の確認も行う)
-//int CandleStickCheck()
-//{
-//}
-
-//新規の売買注文を入れるための条件」と「決済注文を入れるための条件」
-//現在ポジションがあるのか、そのポジションが「買い」なのか「売り」なのか
-//ポジション判定：0(なし)、買い(1)、売り(2)
-//注文数の確認フラグ
-
-////注文確認関数
-//int OrderCheck(int Ticket, int CandleStickFlag)
-//{
-//}
-//
-////ピラミッティング注文フラグ
-//int PyramidingFlag;
-//
-////ピラミッティング注文関数(ピラミッティング注文をしたチケットとそうでないチケットを管理する処理も入れる。)
-//int PyramidingOrder()
-//{
-//}
-
-////決済判断フラグ
-//int CloseCheckFlag;
-////決済判断処理関数
-//int CloseCheckFunction()
-//{
-//}
-
 //現在の日足の
 double d1_high=iHigh(NULL, PERIOD_D1,0); 
 double d1_low=iLow(NULL, PERIOD_D1,0);  
 
 int HorizonFlag;
 //前日・前週の高値・安値を確認する処理
-int HorizonCheckFunction(string Currency,int EntryOrderFlag){
+int HorizonCheckFunction(string Currency,int EntryOrderFlag,long now_id){
   //前日のローソク足の値取得
   double pre_Candle_D_high = iHigh(Currency, PERIOD_D1, 1);
   double pre_Candle_D_low = iLow(Currency, PERIOD_D1, 1);
@@ -509,28 +381,103 @@ int HorizonCheckFunction(string Currency,int EntryOrderFlag){
   double pre2_Candle_W_start = iOpen(Currency, PERIOD_W1, 2);
   double pre2_Candle_W_end = iClose(Currency, PERIOD_W1, 2);
 
+  string obj_name = "horizonline";
+  ObjectCreate(now_id,obj_name,OBJ_HLINE,0,0,pre_Candle_D_high);
+  ObjectSetInteger(now_id,obj_name,OBJPROP_COLOR,clrYellow);
+  ObjectSetInteger(now_id,obj_name,OBJPROP_STYLE,STYLE_SOLID);
+  ObjectSetInteger(now_id,obj_name,OBJPROP_WIDTH,10);
+
+
   //買いエントリーの場合は前回の高値付近に現在の価格が近づいたら検知する
   //Bid
   if(EntryOrderFlag == 1){
-    if(Bid == pre_Candle_D_high){
+      Print("現在のエントリーフラグは：" + EntryOrderFlag);
+    if(Bid == pre_Candle_D_high || Bid < pre_Candle_D_high){
       HorizonFlag = 1;
+      Print("現在のエントリーフラグは：" + HorizonFlag);
     }
   }
   //売りエントリーの場合は前回の安値付近に現在の価格が近づいたら検知する
   //Ask
   else if(EntryOrderFlag == 2){
-    if(Ask == pre_Candle_D_low){
+      Print("現在の水平ラインフラグは：" + EntryOrderFlag);
+    if(Ask == pre_Candle_D_low || Ask > pre_Candle_D_low){
        HorizonFlag = 2;
+       Print("現在の水平ラインフラグは：" + HorizonFlag);
     }
   }
   return(HorizonFlag);
 }
 
-int TrendLineFlag;
+double GetHorizenLine;
 
 //上位足のトレンドライン判定処理
-int TrendLineCheckFlag(){
+int GetHorizenLineFunction(int EntryOrderFlag){
+//---
+   int i=0;
 
+   //Torday
+   double d1_high=iHigh(NULL, PERIOD_D1,0); 
+   double d1_low=iLow(NULL, PERIOD_D1,0);     
+   
+   if (Period() < PERIOD_D1) {  
+      ObjectDelete("D1 Low");
+      ObjectCreate("D1 Low",OBJ_HLINE, 0, Time[0], d1_low);
+      ObjectSet("D1 Low", OBJPROP_STYLE, STYLE_SOLID);
+      ObjectSet("D1 Low", OBJPROP_COLOR, indicator_color1);
+      ObjectSet("D1 Low", OBJPROP_WIDTH, 2);
+      
+      
+      ObjectDelete("D1 High");
+      ObjectCreate("D1 High",OBJ_HLINE, 0, Time[0], d1_high);
+      ObjectSet("D1 High", OBJPROP_STYLE, STYLE_SOLID);
+      ObjectSet("D1 High", OBJPROP_COLOR, indicator_color1);      
+      ObjectSet("D1 High", OBJPROP_WIDTH, 2);
+
+   }
+
+   //h4
+   double h4_high = iHigh(NULL, PERIOD_H4,0);
+   double h4_low  = iLow(NULL,PERIOD_H4,0);
+
+   if (Period() < PERIOD_H4) {  
+      ObjectDelete("H4 Low");
+      ObjectCreate("H4 Low",OBJ_HLINE, 0, Time[0], h4_low);
+      ObjectSet("H4 Low", OBJPROP_STYLE, STYLE_SOLID);
+      ObjectSet("H4 Low", OBJPROP_COLOR, indicator_color2);
+      ObjectSet("H4 Low", OBJPROP_WIDTH, 2);
+      
+      ObjectDelete("H4 High");
+      ObjectCreate("H4 High",OBJ_HLINE, 0, Time[0], h4_high);
+      ObjectSet("H4 High", OBJPROP_STYLE, STYLE_SOLID);
+      ObjectSet("H4 High", OBJPROP_COLOR, indicator_color2);      
+      ObjectSet("H4 High", OBJPROP_WIDTH, 2);
+   }
+
+
+   //h1
+   double h1_high = iHigh(NULL, PERIOD_H1,0);
+   double h1_low  = iLow(NULL,PERIOD_H1,0);
+
+   if (Period() < PERIOD_H1) {  
+      ObjectDelete("H1 Low");
+      ObjectCreate("H1 Low",OBJ_HLINE, 0, Time[0], h1_low);
+      ObjectSet("H1 Low", OBJPROP_STYLE, STYLE_SOLID);
+      ObjectSet("H1 Low", OBJPROP_COLOR, indicator_color3);
+      ObjectSet("H1 Low", OBJPROP_WIDTH, 2);
+      
+      ObjectDelete("H1 High");
+      ObjectCreate("H1 High",OBJ_HLINE, 0, Time[0], h1_high);
+      ObjectSet("H1 High", OBJPROP_STYLE, STYLE_SOLID);
+      ObjectSet("H1 High", OBJPROP_COLOR, indicator_color3);      
+      ObjectSet("H1 High", OBJPROP_WIDTH, 2);
+   }
+   if(EntryOrderFlag == 1){
+      GetHorizenLine = h1_high;
+   }else if(EntryOrderFlag == 2){
+      GetHorizenLine = h1_low;
+   }
+   return(GetHorizenLine);
 }
 
 
@@ -552,7 +499,6 @@ int CrossMadantePerfectOrder(string Currency)
   get_SenkouSpanA = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 2, 1);
   get_SenkouSpanB = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 3, 1);
   get_ChikouSpan = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 4, 27);
-  // iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 0, 1);
 
   //ローソク足の値取得
   get_Candle_high = iHigh(Currency, PERIOD_M5, 1);
@@ -628,6 +574,7 @@ int CrossMadantePerfectOrder(string Currency)
     //ローソク足の雲の内外存在判定処理
     if (get_Candle_low < get_Candle_end && get_Candle_end < get_Candle_start && get_Candle_start < get_Candle_high && get_Candle_high < get_SenkouSpanA)
     {
+      Print("Hiddenline: " + Hidden_line);
       //確定したひとつ前のローソク足の陰線判定
       if (Hidden_line > 0)
       {
@@ -642,8 +589,9 @@ int CrossMadantePerfectOrder(string Currency)
         if (Compare_Candle < 50)
         {
           // 5SMAのローソク陰線下抜け条件判定処理(例外として移動平均から乖離しすぎている場合はエントリーしない)
-          Kairi_Value = ((get_MA_5 - get_Candle_end) * 100 / get_MA_5) * 100;
-          if (get_Candle_low < get_Candle_end && get_Candle_end > get_MA_5 && Kairi_Value < 10)
+          Kairi_Value = (get_MA_5 - get_Candle_end) * 100 / get_MA_5;
+          Print("Kairi_Value: " + Kairi_Value);
+          if (get_Candle_low < get_Candle_end && get_Candle_end > get_MA_5 && Kairi_Value < 0.25)
           {
             EntryOrderFlag = 2;
             Message = "Currency： " + Currency + ", OrderType： SELL" + ", Ticket番号：" + Ticket + ", 乖離率：" + Kairi_Value;
@@ -684,7 +632,8 @@ int CrossMadantePerfectOrder(string Currency)
 
 // トレーリングストップのトレール幅
 //買いポジションの場合、価格が上昇したら、その上昇した価格の20ポイント下にロスカットラインを引き上げる設定
-double TrailingStop = 1;//500
+double TrailingStop = 300;//500
+int TrailingStopFlag;
 
 int TraillingStopFunction(int CandleStickFlag, string Currency)
 {
@@ -706,7 +655,7 @@ int TraillingStopFunction(int CandleStickFlag, string Currency)
         OrderCheckBuyFlag = 1;
         //買い値からトレール幅の設定
         //Max_Stop_Loss_Buy = Bid - TrailingStop * Pips;
-        Max_Stop_Loss_Buy = 200;
+        Max_Stop_Loss_Buy = 100;//-OrderIndex * 10
       }
       //売りの未決済ポジション判定処理
       if (OrderType() == OP_SELL)
@@ -715,7 +664,7 @@ int TraillingStopFunction(int CandleStickFlag, string Currency)
         OrderCheckSellFlag = 2;
         //売り値からトレール幅の設定
         //Max_Stop_Loss_Sell = Ask + TrailingStop * Pips;
-        Max_Stop_Loss_Sell = 200;
+        Max_Stop_Loss_Sell = 200-OrderIndex * 10;
       }
     }
 
@@ -724,14 +673,14 @@ int TraillingStopFunction(int CandleStickFlag, string Currency)
     {
       if (TrailingStop > 0)
       {
-        if (Bid - OrderOpenPrice() > Point * TrailingStop)
+        if (Bid - OrderOpenPrice() > pips * TrailingStop)
         {
-          if (OrderStopLoss() < Bid - Point * Max_Stop_Loss_Buy)
+          if (OrderStopLoss() < Bid - pips * Max_Stop_Loss_Buy)
           {
             Print("トレーリングストップ設定");
             Message = "トレーリングストップ：　Currency： " + Currency;
-            LineNotify(Line_token, Message);
-            OrderModify(OrderTicket(), OrderOpenPrice(),Bid - Point * Max_Stop_Loss_Buy,OrderTakeProfit(),0,clrNONE);
+            //LineNotify(Line_token, Message);
+            OrderModify(OrderTicket(), OrderOpenPrice(),Bid - pips * Max_Stop_Loss_Buy,OrderTakeProfit(),0,clrNONE);
           }
         }
       }
@@ -741,24 +690,25 @@ int TraillingStopFunction(int CandleStickFlag, string Currency)
     {
       if (TrailingStop > 0)
       {
-        if ((OrderOpenPrice() - Ask) > (Point * TrailingStop))
+        if ((OrderOpenPrice() - Ask) > (pips * TrailingStop))
         {
-          if ((OrderStopLoss() > (Ask + Point * TrailingStop)) || (OrderStopLoss() == 0))
+          if ((OrderStopLoss() > (Ask + pips * TrailingStop)) || (OrderStopLoss() == 0))
           {
             Print("トレーリングストップ設定");
             Message = "トレーリングストップ：　Currency： " + Currency;
-            LineNotify(Line_token, Message);
+            //LineNotify(Line_token, Message);
             OrderModify(OrderTicket(), OrderOpenPrice(), Max_Stop_Loss_Sell, 0, 0);
           }
         }
       }
     }
   }
+  return(TrailingStopFlag);
 }
 
 //損切り設定関数(トレールと併用して設定する)
 int LossCutFlag;
-int LossCutFunction(int Ticket, int CandleStickFlag, string Currency)
+int LossCutFunction(int Ticket, int CandleStickFlag, string Currency,double HorizenLine)
 {
   //ローソク足の値取得
   double LossCut_Candle_high = iHigh(Currency, PERIOD_M5, 1);
@@ -766,10 +716,10 @@ int LossCutFunction(int Ticket, int CandleStickFlag, string Currency)
   double LossCut_Candle_start = iOpen(Currency, PERIOD_M5, 1);
   double LossCut_Candle_end = iClose(Currency, PERIOD_M5, 1);
 
-  //double LossCut_MA_5 = iMA(Currency, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 1);
-  //double LossCut_MA_14 = iMA(Currency, 0, 14, 0, MODE_SMA, PRICE_CLOSE, 1);
-  //double LossCut_MA_21 = iMA(Currency, 0, 21, 0, MODE_SMA, PRICE_CLOSE, 1);
-  //double LossCut_MA_60 = iMA(Currency, 0, 60, 0, MODE_SMA, PRICE_CLOSE, 1);
+  double LossCut_MA_5 = iMA(Currency, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 1);
+  double LossCut_MA_14 = iMA(Currency, 0, 14, 0, MODE_SMA, PRICE_CLOSE, 1);
+  double LossCut_MA_21 = iMA(Currency, 0, 21, 0, MODE_SMA, PRICE_CLOSE, 1);
+  double LossCut_MA_60 = iMA(Currency, 0, 60, 0, MODE_SMA, PRICE_CLOSE, 1);
 
   //先行スパンの値を取得する
   double LossCut_SenkouSpanA = iCustom(Currency, 0, "Ichimoku", 9, 26, 52, 2, 1);
@@ -783,10 +733,9 @@ int LossCutFunction(int Ticket, int CandleStickFlag, string Currency)
   //損切り判定処理(5smaを陰線で完全に下抜けした場合)
   //陰線判定
   //約定した価格と現在の価格が一定以上乖離したら損切りを執行数する処理
-  // Print("================================Hidden_line"+ Hidden_line);
   //買いポジションをを保有している場合の決済について、雲の中にローソク足が完全に潜った際に損切りを失効する
-  Print("================================Hidden_line" + Hidden_line);
-  if (LossCut_SenkouSpanA > LossCut_Candle_high && LossCut_Candle_high > LossCut_Candle_start && LossCut_Candle_start > LossCut_Candle_end && LossCut_Candle_end > LossCut_Candle_low)
+  //LossCut_SenkouSpanA > LossCut_Candle_high && LossCut_Candle_high > LossCut_Candle_start && LossCut_Candle_start > LossCut_Candle_end && LossCut_Candle_end > LossCut_Candle_low
+  if (LossCut_MA_5 < LossCut_MA_14 && LossCut_MA_14 < LossCut_MA_21)
   {
     Print("================================決済処理スタート===============================");
     //保有ポジションを一つずつチェックしていく
@@ -803,14 +752,19 @@ int LossCutFunction(int Ticket, int CandleStickFlag, string Currency)
           if (OrderMagicNumber() == MAGICMA)
           {
             //ポジションを決済
-            orderClose = OrderClose(OrderTicket(), OrderLots(), OrderClosePrice(), 10, clrNONE);
+            Message = "決済処理：　Currency： " + Currency;
+            LineNotify(Line_token, Message);
+            orderClose = OrderClose(OrderTicket(), OrderLots(), OrderClosePrice(), 10, clrBlue);/*OrderClosePrice()*/
           }
         }
       }
     }
   }
   //売りポジションをを保有している場合の決済について、雲の中にローソク足が完全に潜った際に損切りを失効する
-  else if(LossCut_Candle_high > LossCut_Candle_end && LossCut_Candle_end > LossCut_Candle_start && LossCut_Candle_low > LossCut_Candle_low && LossCut_Candle_low > LossCut_SenkouSpanA){
+  //LossCut_Candle_high > LossCut_Candle_end && LossCut_Candle_end > LossCut_Candle_start && LossCut_Candle_low > LossCut_Candle_low && LossCut_Candle_low > LossCut_SenkouSpanA
+  else if(LossCut_MA_5 > LossCut_MA_14 && LossCut_MA_14 > LossCut_MA_21)
+  {
+    Print("================================決済処理スタート===============================");
     //保有ポジションを一つずつチェックしていく
     for (int j = OrdersTotal() - 1; j >= 0; j--)
     {
@@ -825,13 +779,83 @@ int LossCutFunction(int Ticket, int CandleStickFlag, string Currency)
           if (OrderMagicNumber() == MAGICMA)
           {
             //ポジションを決済
-            orderClose = OrderClose(OrderTicket(), OrderLots(), OrderClosePrice(), 10, clrNONE);
+            Message = "決済処理：　Currency： " + Currency;
+            LineNotify(Line_token, Message);
+            orderClose = OrderClose(OrderTicket(), OrderLots(), OrderClosePrice(), 10, clrBlue);/*OrderClosePrice()*/
           }
         }
       }
     }
   }
+  return(LossCutFlag);
 }
+
+////現在の保有ポジションの損益を取得する機能
+//int NowGetProfit;
+//double GetNowGetProfit(){
+//  for(int i = 0;OrdersTotal()){
+//
+//  }
+//  
+//
+//}
+
+
+//+------------------------------------------------------------------+
+//|【関数】直近の高値安値を取得する
+//5分足ベースでの直近の最高値と最安値を一定の範囲から取得する
+double Price_M5=0;
+double funcHighLowGetM5(int EntryOrderFlag,int Kikan,int Start)
+{
+   if(EntryOrderFlag==1){
+      Price_M5 = iHigh(NULL, 0, iHighest(NULL,0,MODE_HIGH,Kikan,Start));
+   }
+   else if(EntryOrderFlag==2){
+      Price_M5 = iLow(NULL, 0, iLowest(NULL,0,MODE_LOW,Kikan,Start));
+   }
+   return Price_M5; 
+}
+
+//1時間足ベースでの直近の最高値と最安値を一定の範囲から取得する
+double Price_H1=0;
+double funcHighLowGetH1(int EntryOrderFlag,int Kikan,int Start)
+{
+   if(EntryOrderFlag==1){
+      Price_H1 = iHigh(NULL, PERIOD_H1, iHighest(NULL,0,MODE_HIGH,Kikan,Start));
+   }
+   else if(EntryOrderFlag==2){
+      Price_H1 = iLow(NULL, PERIOD_H1, iLowest(NULL,0,MODE_LOW,Kikan,Start));
+   }
+   return Price_H1;   
+}
+
+//4時間足ベースでの直近の最高値と最安値を一定の範囲から取得する
+double Price_H4=0;
+double funcHighLowGetH4(int EntryOrderFlag,int Kikan,int Start)
+{    
+   if(EntryOrderFlag==1){
+      Price_H4 = iHigh(NULL, PERIOD_H4, iHighest(NULL,0,MODE_HIGH,Kikan,Start));
+   }
+   else if(EntryOrderFlag==2){
+      Price_H4 = iLow(NULL, PERIOD_H4, iLowest(NULL,0,MODE_LOW,Kikan,Start));
+   }
+   return Price_H4;   
+}
+
+//日足ベースでの直近の最高値と最安値を一定の範囲から取得する
+double Price_D1=0;
+double funcHighLowGetD1(int EntryOrderFlag,int Kikan,int Start)
+{    
+   if(EntryOrderFlag==1){
+      Price_D1 = iHigh(NULL, PERIOD_D1, iHighest(NULL,0,MODE_HIGH,Kikan,Start));
+   }
+   else if(EntryOrderFlag==2){
+      Price_D1 = iLow(NULL, PERIOD_D1, iLowest(NULL,0,MODE_LOW,Kikan,Start));
+   }
+   return Price_D1;   
+}
+
+
 
 // LINE配信機能
 void LineNotify(string Token, string Message)
@@ -849,11 +873,33 @@ void LineNotify(string Token, string Message)
   }
 }
 
+int start()
+  {
+//----
+      int counted_bars=IndicatorCounted();
+      //---- check for possible errors
+      if(counted_bars<0) return(-1);
+      //---- the last counted bar will be recounted
+      if(counted_bars>0) counted_bars--;
+      int limit = Bars-counted_bars;
+      //---- main loop
+      for(int i = 0; i < limit; i++) {
+         double ma0 = iMA(NULL, 0, MovingAvaragePeriod, 0, MODE_SMA, PRICE_CLOSE, i);
+         double ma1 = iMA(NULL, 0, MovingAvaragePeriod, 0, MODE_SMA, PRICE_CLOSE, i+1);
+         ExtMapBuffer1[i] = (MathArctan(ma0 - ma1) / BarWidth) * (180 / 3.14);
+      }
+
+//----
+   return(0);
+  }
+
+
+
 //メイン関数(値動きがあるたびに走る処理)
 void OnTick()
 {
   //通貨ペアの指定
-  string ArraySymbol[6] = {"USDJPY", "EURUSD", "GBPUSD", "GBPJPY", "AUDJPY", "EURJPY"}; //希望としてはトレンドの発生しやすい通貨など、、手入力のパラメーターでもいい。
+  string ArraySymbol[5] = {"GBPUSD"}; //希望としてはトレンドの発生しやすい通貨など、、手入力のパラメーターでもいい。
 
   //移動平均線&一目均衡表のエントリーフラグ
   int EntryOrderFlag;
@@ -864,7 +910,6 @@ void OnTick()
   //チャートID取得
   now_id = ChartID();
 
-  // Print("現在のポジション数" + OrdersTotal());
   //新しいローソク足ができていることを確認してから処理を開始
   NewCandleStickCheckFlag = NewCandleStickCheck(); //======関数1======
   if (NewCandleStickCheckFlag == 1)
@@ -882,26 +927,37 @@ void OnTick()
 
       //上昇エントリーフラグ
       if (EntryOrderFlag == 1)
-      {
+      { 
+        MostRecent_LowPrice = GetHorizenLineFunction(EntryOrderFlag);
         //オーダーが0から5つ以下のポジションの時に実行をする
         if (OrdersTotal() <= 5)
         {
+          //直近の高値を確認する処理
+          Price_M5 = funcHighLowGetM5(EntryOrderFlag,20,0);
+          Price_H1 = funcHighLowGetH1(EntryOrderFlag,10,0);
           //上位足の水平線判定処理関数呼び出し
-          HorizonFlag = HorizonCheckFunction(Currency,EntryOrderFlag);
+          HorizonFlag = HorizonCheckFunction(Currency,EntryOrderFlag,now_id);//======関数4======
           if(HorizonFlag = 1){
             //注文処理(チケット発行)
-            Ticket = OrderFuncrion(Currency, EntryOrderFlag);
+            Ticket = OrderFuncrion(Currency, EntryOrderFlag);//======関数5======
             //スクショ機能
             //Pic = ChartScreenShot(now_id,filename,width,height,ENUM_ALIGN_MODE  align_mode = ALIGN_RIGHT);
-            TraillingStopFunction(EntryOrderFlag, Currency);
+            TraillingStopFunction(EntryOrderFlag, Currency);//======関数6======
+            
+            
+            
+            ////////
             //トレーリングストップを設定してもなお未決済のポジションがある場合は損切りを失効する処理
-            OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
-          }
-          //エラー処理
-          if (Ticket != -1)
-          {
+            OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency,MostRecent_LowPrice);//======関数7======
+            ////////
+            
+            
+            
+            //エラー処理
+            if (Ticket != -1)
+           {
             // OrderCheckFlag = OrderCheck(Ticket, EntryOrderFlag);
-            OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
+            OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency,MostRecent_LowPrice);
             if (OrderCheckFlag == 0)
             {
               OrderFuncrion(Currency, EntryOrderFlag);
@@ -911,18 +967,17 @@ void OnTick()
           {
             // Print("チケット番号:" + Ticket + " UpEntryFailed:" + EntryOrderFlag); //いずれ消す
           }
+          }else{
+            Print("no-enntori");
+          }
         }
         //ポジション保有中の時の処理
         else if (OrdersTotal() >= 1)
         {
-          // Print("トレーリングストップを設定するポジション数です。" + OrdersTotal());
-          // Print("通貨ペアは" + Currency);
-          // Print("エントリーフラグ" + EntryOrderFlag);
-          // Print("================================決済処理================================");
           //トレーリングストップ処理
           TraillingStopFunction(EntryOrderFlag, Currency);
           //トレーリングストップを設定してもなお未決済のポジションがある場合は損切りを失効する処理
-          OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
+          OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency,MostRecent_LowPrice);
         }
         else
         {
@@ -935,29 +990,38 @@ void OnTick()
       }
       //下降エントリーフラグ
       else if (EntryOrderFlag == 2)
-      {
-        // Print("DownEntryFlag:" + EntryOrderFlag); //いずれ消す
+      { 
+        MostRecent_HighPrice = GetHorizenLineFunction(EntryOrderFlag);
         //オーダーが0から5つ以下のポジションの時に実行をする
         if (OrdersTotal() <= 5)
         {
           //上位足の水平線判定処理関数呼び出し
-          HorizonFlag = HorizonCheckFunction(Currency,EntryOrderFlag);
+          HorizonFlag = HorizonCheckFunction(Currency,EntryOrderFlag,now_id);//======関数4======
           if(HorizonFlag == 2){
+            Print("DownEntryFlag:" + EntryOrderFlag + "Cuurency: " + Currency); //いずれ消す
             //注文処理(チケット発行)
-            Ticket = OrderFuncrion(Currency, EntryOrderFlag);
+            Ticket = OrderFuncrion(Currency, EntryOrderFlag);//======関数5======
             //スクショ機能
             //Pic = ChartScreenShot(now_id,filename,width,height,ENUM_ALIGN_MODE  align_mode = ALIGN_RIGHT);
-            TraillingStopFunction(EntryOrderFlag, Currency);
+            TraillingStopFunction(EntryOrderFlag, Currency);//======関数6======
+
+
+
+            ////////
             //トレーリングストップを設定してもなお未決済のポジションがある場合は損切りを失効する処理
-            OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
-          }
+            OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency,MostRecent_HighPrice);//======関数7======
+            ////////
+
+
+
+
           //エラー処理
           if (Ticket != -1)
           {
             // Print("チケット番号:" + Ticket + " DownEntryFlag:" + EntryOrderFlag); //いずれ消す
             //決済処理(雲の中に隠れてしまった場合・20pips固定のどちらかの条件に当てはまった場合に損切りを行う)
             // OrderCheckFlag = OrderCheck(Ticket, EntryOrderFlag);
-            OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
+            OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency,MostRecent_HighPrice);
             if (OrderCheckFlag == 0)
             {
               OrderFuncrion(Currency, EntryOrderFlag);
@@ -966,6 +1030,10 @@ void OnTick()
           else if (Ticket == -1)
           {
             // Print("チケット番号:" + Ticket + " DownEntryFailed:" + EntryOrderFlag); //いずれ消す
+          }
+          }
+          else{
+           Print("no-enntori");
           }
         }
         //ポジション保有中の時の処理
@@ -977,7 +1045,7 @@ void OnTick()
           //トレーリングストップ処理
           TraillingStopFunction(EntryOrderFlag, Currency);
           //トレーリングストップを設定してもなお未決済のポジションがある場合は損切りを失効する処理
-          OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency);
+          OrderCheckFlag = LossCutFunction(Ticket, EntryOrderFlag, Currency,MostRecent_HighPrice);
         }
         else
         {
