@@ -585,7 +585,7 @@ int CrossMadantePerfectOrder(string Currency)
   //======前提条件確認：雲とローソク足の位置関係を判定し上昇トレンドか下降トレンドを判定する======
   /// OrderFlag が 1の時は上昇エントリー
   //上昇パーフェクトオーダー&全ての移動平均線が前回より大きい=傾きがある時のみの条件判定処理(大前提条件)
-  if (get_MA_5 > get_MA_14 && get_MA_14 > get_MA_21 && get_MA_21 > get_MA_60 && get_MA_60 > get_MA_240 && get_MA_240 > get_MA_1440 &
+  if (get_MA_5 > get_MA_14 && get_MA_14 > get_MA_21 && get_MA_21 > get_MA_60 && get_MA_60 > get_MA_240 && get_MA_240 > get_MA_1440 &&
     get_MA_5 > pre_get_MA_5 && get_MA_14 > pre_get_MA_14 && get_MA_21 > pre_get_MA_21 && get_MA_60 > pre_get_MA_60 && get_MA_240 > pre_get_MA_240 && get_MA_1440 > pre_get_MA_1440)
   {
     //ローソク足の雲の内外存在判定処理
@@ -628,7 +628,7 @@ int CrossMadantePerfectOrder(string Currency)
   //======上記で取得した処理フラグをもとに移動平均線とローソク足の位置関係を判定する======
   // OrderFlag が 2の時は下降エントリー
   //下降パーフェクトオーダーの条件判定処理
-  else if (get_MA_5 < get_MA_14 && get_MA_14 < get_MA_21 && get_MA_21 < get_MA_60 && get_MA_60 < get_MA_240 && get_MA_240 < get_MA_1440 &
+  else if (get_MA_5 < get_MA_14 && get_MA_14 < get_MA_21 && get_MA_21 < get_MA_60 && get_MA_60 < get_MA_240 && get_MA_240 < get_MA_1440 &&
   get_MA_5 < pre_get_MA_5 && get_MA_14 < pre_get_MA_14 && get_MA_21 < pre_get_MA_21 && get_MA_60 < pre_get_MA_60 && get_MA_240 < pre_get_MA_240 && get_MA_1440 < pre_get_MA_1440
   )
   {
