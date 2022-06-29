@@ -5,13 +5,15 @@ https://codelabsjp.net/mt4-ea-trailingstop/
 https://www.youtube.com/watch?v=KOA6-tTHw2A
 https://get-daze.net/2018/10/12/mt4-trailingstop/
 https://codelabsjp.net/mt4-ea-trailingstop/
+高値安値
+https://investment-vmoney.com/archives/4889?amp=1
 
 スクリーンショット
 https://takonegifx.com/post/mt4-mt5-ea-chartscreenshot/
 https://labo.gogojungle.co.jp/articles/80
 https://xn--fx-xt3c.jp/capture-indicator/
 https://yukifx.web.fc2.com/sub/reference/15_chartope/cone/chartope_chartscreenshot.html
-
+https://www.mql5.com/ja/docs/chart_operations/chartscreenshot
 
 https://yukifx.web.fc2.com/index.html
 
@@ -21,6 +23,10 @@ https://fx-prog.com/ea-ma/#toc9
 
 角度について
 http://victor.cocolog-nifty.com/blog/2008/02/chartstudio_11_09a1.html
+
+チャートID
+https://yukifx.web.fc2.com/sub/reference/15_chartope/cone/chartope_chartid.html
+
 
 損益取得関数Pips
 https://ameblo.jp/wonderfulfxlife/entry-12574391761.html
